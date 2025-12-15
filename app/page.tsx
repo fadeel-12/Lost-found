@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import  Link from "next/link";
+import Link from "next/link";
 import { SearchBar } from "../components/SearchBar";
 import { Button } from "../components/button";
 import { PlusCircle, Package, LogIn } from "lucide-react";
@@ -67,6 +67,58 @@ function HomeContent() {
     clearShouldOpenSignInFromQuery();
   }
 
+  const parseItemDate = (dateStr: string) => {
+    const parsed = new Date(dateStr);
+
+    if (isNaN(parsed.getTime())) {
+      console.warn("Invalid date:", dateStr);
+      return null;
+    }
+
+    parsed.setHours(0, 0, 0, 0);
+    return parsed;
+  };
+
+
+  const matchesDateRange = (dateStr: string, range: string) => {
+    if (range === "all") return true;
+
+    const itemDate = parseItemDate(dateStr);
+    if (!itemDate) return false;
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const start = new Date(now);
+
+    switch (range) {
+      case "today":
+        return itemDate.getTime() === now.getTime();
+
+      case "yesterday":
+        start.setDate(now.getDate() - 1);
+        return itemDate.getTime() === start.getTime();
+
+      case "week":
+        start.setDate(now.getDate() - 7);
+        break;
+
+      case "month":
+        start.setDate(now.getDate() - 30);
+        break;
+
+      case "3months":
+        start.setDate(now.getDate() - 90);
+        break;
+
+      default:
+        return true;
+    }
+
+    return itemDate >= start && itemDate <= now;
+  };
+
+
   const filteredItems = items.filter((item) => {
     const q = searchQuery.toLowerCase();
 
@@ -93,7 +145,10 @@ function HomeContent() {
       return item.location.toLowerCase().includes(exactLocation);
     })();
 
-    return matchesSearch && matchesTab && matchesCategory && matchesLocation;
+    const matchesDate =
+      matchesDateRange(item.date, selectedDateRange);
+
+    return matchesSearch && matchesTab && matchesCategory && matchesLocation && matchesDate;
   });
 
   const handleSearch = (query: string) => {
