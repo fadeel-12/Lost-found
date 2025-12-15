@@ -107,7 +107,7 @@ export function SignInDialog({
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              placeholder="your.email@student.uibk.ac.at"
+              placeholder="your.email@example.com"
             />
           </div>
 

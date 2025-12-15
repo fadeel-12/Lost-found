@@ -127,7 +127,7 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="your.email@student.uibk.ac.at"
+              placeholder="your.email@example.com"
             />
           </div>
 
