@@ -11,7 +11,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, student_id } = await req.json();
+    const { name, email, phone, password, student_id } = await req.json();
 
     const { data: existing, error: existingError } = await supabase
       .from("users")
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       .insert([{ 
         name, 
         email, 
+        phone,
         password_hash: hash, 
         student_id,
         email_verified: false

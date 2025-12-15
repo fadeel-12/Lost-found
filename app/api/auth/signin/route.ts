@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        phone: user.phone,
         email_verified: user.email_verified,
       },
     });
