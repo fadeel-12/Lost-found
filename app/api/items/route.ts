@@ -26,6 +26,7 @@ export async function GET() {
         date,
         type,
         imageUrl,
+        user_id,
         category:categories ( name ),
         location:locations ( name ),
         user:users ( name, email, phone )
@@ -47,7 +48,8 @@ export async function GET() {
       description: i.description,
       contactName: i.user?.name ?? '',
       contactEmail: i.user?.email ?? '',
-      contactPhone: i.user?.phone ?? ''
+      contactPhone: i.user?.phone ?? '',
+      user_id: i.user_id
     }));
 
     return NextResponse.json(items, { status: 200 });
@@ -192,7 +194,7 @@ export async function POST(req: NextRequest) {
         const dayDiff =
           Math.abs(
             new Date(newItem.date).getTime() -
-              new Date(candidate.date).getTime()
+            new Date(candidate.date).getTime()
           ) / (1000 * 60 * 60 * 24);
 
         const dateScore = dayDiff <= 3 ? 0.1 : 0;

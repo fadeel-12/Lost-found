@@ -1,14 +1,30 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../dialog';
-import { Badge } from '../badge';
-import { Button } from '../button';
-import { Calendar, MapPin, User, Mail, Phone, MessageSquare } from 'lucide-react';
-import { ImageWithFallback } from '../ImageWithFallback';
-import { Separator } from '../separator';
+// components/dialogs/ItemDetailsDialog.tsx
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../dialog";
+import { Badge } from "../badge";
+import { Button } from "../button";
+import {
+  Calendar,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  MessageCircle,
+} from "lucide-react";
+import { ImageWithFallback } from "../ImageWithFallback";
+import { Separator } from "../separator";
 
 interface ItemDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onContactOwner?: () => void;
+  onContactOwner: () => void;
   item: {
     id: string;
     title: string;
@@ -21,11 +37,23 @@ interface ItemDetailsDialogProps {
     contactName?: string;
     contactEmail?: string;
     contactPhone?: string;
+    user_id?: string;
   } | null;
+  currentUserId: string | null;
+  onOpenItemMessages: (itemId: string) => void;
 }
 
-export function ItemDetailsDialog({ open, onOpenChange, item, onContactOwner }: ItemDetailsDialogProps) {
+export function ItemDetailsDialog({
+  open,
+  onOpenChange,
+  item,
+  currentUserId,
+  onContactOwner,
+  onOpenItemMessages,
+}: ItemDetailsDialogProps) {
   if (!item) return null;
+
+  const isOwner = !!currentUserId && item.user_id === currentUserId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,14 +157,24 @@ export function ItemDetailsDialog({ open, onOpenChange, item, onContactOwner }: 
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button 
-              className="flex-1 gap-2"
-              onClick={onContactOwner}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Contact Owner
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {!isOwner && (
+              <Button className="flex-1 gap-2" onClick={onContactOwner}>
+                <MessageCircle className="h-4 w-4" />
+                Contact Owner
+              </Button>
+            )}
+
+            {isOwner && (
+              <Button
+                className="flex-1 gap-2"
+                onClick={() => onOpenItemMessages(item.id)}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Messages
+              </Button>
+            )}
+
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           </div>

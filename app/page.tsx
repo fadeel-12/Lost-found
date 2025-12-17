@@ -12,6 +12,7 @@ import { AuthDialogs } from "../components/dialogs/AuthDialogs";
 import { ItemDetailsDialog } from "../components/dialogs/ItemDetailsDialog";
 import { ReportItemDialog } from "../components/dialogs/ReportItemDialog";
 import { SuccessDialog } from '../components/dialogs/SuccessDialog';
+import { ItemMessagesDialog } from "../components/dialogs/ItemMessagesDialog";
 import { LOCATIONS } from "../components/SearchBar";
 
 function HomeContent() {
@@ -46,6 +47,8 @@ function HomeContent() {
   const [openReportAfterLogin, setOpenReportAfterLogin] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  const [itemMessagesDialogOpen, setItemMessagesDialogOpen] = useState(false);
+  const [itemMessagesItemId, setItemMessagesItemId] = useState<string | null>(null);
 
   async function loadItems() {
     try {
@@ -175,14 +178,35 @@ function HomeContent() {
     setReportOpen(true);
   };
 
-  const handleContactOwner = () => {
+  const handleContactOwner = async () => {
     if (loading) return;
     if (!user) {
       setDetailsDialogOpen(false);
       setSignInOpen(true);
       return;
     }
+
+    try {
+      const res = await fetch("/api/chats/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: selectedItem?.id }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to start chat");
+        return;
+      }
+
+      setDetailsDialogOpen(false);
+      setItemMessagesItemId(selectedItem?.id ?? null);
+      setItemMessagesDialogOpen(true);
+    } catch (err) {
+      console.error("contact owner error", err);
+    }
   };
+
+
 
   const handleItemClick = (item: any) => {
     setSelectedItem(item);
@@ -345,6 +369,19 @@ function HomeContent() {
         onOpenChange={setDetailsDialogOpen}
         item={selectedItem}
         onContactOwner={handleContactOwner}
+        onOpenItemMessages={(itemId) => {
+          setDetailsDialogOpen(false);
+          setItemMessagesItemId(itemId);
+          setItemMessagesDialogOpen(true);
+        }}
+        currentUserId={user?.id ?? null}
+      />
+
+      <ItemMessagesDialog
+        open={itemMessagesDialogOpen}
+        onOpenChange={setItemMessagesDialogOpen}
+        itemId={itemMessagesItemId}
+        currentUserId={user?.id ?? null}
       />
 
       <AuthDialogs
