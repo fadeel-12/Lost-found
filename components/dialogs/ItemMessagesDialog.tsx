@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "../dialog";
-import { Button } from "../button";
-import { ChatWindow } from "../chat/ChatWindow";
-import { MessageCircle } from "lucide-react";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ChatWindow } from "@/components/chat/ChatWindow";
 
 type ItemChatSummary = {
   id: string;

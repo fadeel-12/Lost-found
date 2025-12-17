@@ -1,7 +1,7 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './card';
-import { Badge } from './badge';
 import { Calendar, MapPin } from 'lucide-react';
-import { ImageWithFallback } from './ImageWithFallback';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ItemCardProps {
   id: string;

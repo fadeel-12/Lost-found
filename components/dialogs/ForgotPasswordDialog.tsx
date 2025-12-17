@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../dialog";
-import { Button } from "../button";
-import { Input } from "../input";
-import { Label } from "../label";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ForgotPasswordDialogProps {
   open: boolean;

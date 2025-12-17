@@ -94,10 +94,8 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesOption
         (payload) => {
           const m = payload.new as any;
           setMessages((prev) => {
-            // If the real DB message is already there, do nothing
             if (prev.some((msg) => msg.id === m.id)) return prev;
 
-            // Remove any temp optimistic message that matches sender + text
             const withoutTemps = prev.filter(
               (msg) =>
                 !msg.id.startsWith("temp-") ||

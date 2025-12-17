@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useChatMessages } from "@/hooks/useChatMessages";
-import { Button } from "../button";
-import { Input } from "../input";
 import { Send, MessageCircle, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useChatMessages } from "@/hooks/useChatMessages";
 
 interface ChatWindowProps {
   chatId: string | null;

@@ -1,10 +1,10 @@
 "use client";
 
-import { SignUpDialog } from "./SignUpDialog";
-import { SignInDialog } from "./SignInDialog";
-import { VerifyEmailDialog } from "./VerifyEmailDialog";
-import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
-import type { User } from "../../hooks/useAuth";
+import { SignUpDialog } from "@/components/dialogs/SignUpDialog";
+import { SignInDialog } from "@/components/dialogs/SignInDialog";
+import { VerifyEmailDialog } from "@/components/dialogs/VerifyEmailDialog";
+import { ForgotPasswordDialog } from "@/components/dialogs/ForgotPasswordDialog";
+import type { User } from "@/hooks/useAuth";
 
 type AuthDialogsProps = {
   signInOpen: boolean;

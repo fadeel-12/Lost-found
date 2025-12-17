@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { LogIn } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../dialog";
-import { Button } from "../button";
-import { Input } from "../input";
-import { Label } from "../label";
-import { LogIn } from "lucide-react";
-import { toast } from "sonner";
-import type { User } from "../../hooks/useAuth";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { User } from "@/hooks/useAuth";
 
 interface SignInDialogProps {
   open: boolean;
