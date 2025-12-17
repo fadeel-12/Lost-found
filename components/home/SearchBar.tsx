@@ -2,21 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Input } from "./input";
-import { Button } from "./button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./select";
-import { Label } from "./label";
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "./collapsible";
+} from "@/components/ui/collapsible";
 
 export const LOCATIONS = [
   { value: "all", label: "All Locations" },

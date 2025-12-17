@@ -1,28 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { Upload } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../dialog";
-import { Button } from "../button";
-import { Input } from "../input";
-import { Label } from "../label";
-import { Textarea } from "../textarea";
-import { RadioGroup, RadioGroupItem } from "../radio-group";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../select";
-import { Upload } from "lucide-react";
-import { toast } from "sonner";
+} from "@/components/ui/select";
 
 interface ReportItemDialogProps {
   open: boolean;

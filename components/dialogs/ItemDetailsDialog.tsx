@@ -1,15 +1,5 @@
-// components/dialogs/ItemDetailsDialog.tsx
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog";
-import { Badge } from "../badge";
-import { Button } from "../button";
 import {
   Calendar,
   MapPin,
@@ -18,8 +8,17 @@ import {
   Phone,
   MessageCircle,
 } from "lucide-react";
-import { ImageWithFallback } from "../ImageWithFallback";
-import { Separator } from "../separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
+import { Separator } from "@/components/ui/separator";
 
 interface ItemDetailsDialogProps {
   open: boolean;
