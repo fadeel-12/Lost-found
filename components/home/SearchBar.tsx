@@ -48,7 +48,7 @@ export const CATEGORIES = [
   { value: "electronics", label: "Electronics" },
   { value: "wallet", label: "Wallet" },
   { value: "keys", label: "Keys" },
-  { value: "bag", label: "Bags" },
+  { value: "bags", label: "Bags" },
   { value: "accessories", label: "Accessories" },
   { value: "documents", label: "Documents" },
   { value: "clothing", label: "Clothing" },

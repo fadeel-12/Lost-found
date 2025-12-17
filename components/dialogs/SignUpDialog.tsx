@@ -88,10 +88,7 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
   };
 
   const handleSwitchToSignIn = () => {
-    onOpenChange(false);
-    if (onSwitchToSignIn) {
-      onSwitchToSignIn();
-    }
+    onSwitchToSignIn?.();
   };
 
   return (

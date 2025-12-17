@@ -74,12 +74,10 @@ export function SignInDialog({
   };
 
   const handleSwitchToSignUp = () => {
-    onOpenChange(false);
     onSwitchToSignUp?.();
   };
 
   const handleForgotClick = () => {
-    onOpenChange(false);
     onForgotPassword?.(formData.email);
   };
 

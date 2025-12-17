@@ -30,7 +30,7 @@ export function useHomeController() {
     locations: LOCATIONS,
   });
 
-  const deps = useMemo(
+  const paginationDeps = useMemo(
     () => [searchQuery, selectedCategory, selectedLocation, activeTab, selectedDateRange],
     [searchQuery, selectedCategory, selectedLocation, activeTab, selectedDateRange]
   );
@@ -38,7 +38,7 @@ export function useHomeController() {
   const { currentPage, setCurrentPage, totalPages, currentItems } = usePagination(
     filteredItems,
     6,
-    deps
+    paginationDeps
   );
 
   const [signInOpen, setSignInOpen] = useState(false);
@@ -49,11 +49,29 @@ export function useHomeController() {
   const [reportOpen, setReportOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [successReportType, setSuccessReportType] = useState<ReportType>("lost");
-
   const [itemMessagesDialogOpen, setItemMessagesDialogOpen] = useState(false);
   const [itemMessagesItemId, setItemMessagesItemId] = useState<string | null>(null);
+  const [pendingChatItemId, setPendingChatItemId] = useState<string | null>(null);
+  const [pendingOpenMessagesAfterLogin, setPendingOpenMessagesAfterLogin] = useState(false);
+  const [pendingOpenReportAfterLogin, setPendingOpenReportAfterLogin] = useState(false);
 
-  const openReport = () => requireAuth(() => setReportOpen(true));
+  const clearFilters = () => {
+    setSelectedLocation("all");
+    setSelectedCategory("all");
+    setSelectedDateRange("all");
+  };
+
+  const openReport = () => {
+    setDetailsDialogOpen(false);
+
+    if (!user && !loading) {
+      setPendingOpenReportAfterLogin(true);
+      setSignInOpen(true);
+      return;
+    }
+
+    requireAuth(() => setReportOpen(true));
+  };
 
   const openDetails = (item: any) => {
     setSelectedItem(item);
@@ -67,33 +85,101 @@ export function useHomeController() {
     reload();
   };
 
-  const clearFilters = () => {
-    setSelectedLocation("all");
-    setSelectedCategory("all");
-    setSelectedDateRange("all");
+  const requestOpenMessagesForItem = (itemId: string | null) => {
+    if (!itemId) return;
+
+    setDetailsDialogOpen(false);
+
+    if (!user && !loading) {
+      setPendingChatItemId(itemId);
+      setPendingOpenMessagesAfterLogin(true);
+      setSignInOpen(true);
+      return;
+    }
+
+    setItemMessagesItemId(itemId);
+    setItemMessagesDialogOpen(true);
   };
 
+  const consumePendingMessagesIntent = () => {
+    const shouldOpen = pendingOpenMessagesAfterLogin && !!pendingChatItemId;
+    const itemId = pendingChatItemId;
+
+    setPendingOpenMessagesAfterLogin(false);
+    setPendingChatItemId(null);
+
+    return { shouldOpen, itemId };
+  };
+
+  const consumePendingReportIntent = () => {
+    const shouldOpen = pendingOpenReportAfterLogin;
+    setPendingOpenReportAfterLogin(false);
+    return { shouldOpen };
+  };
+
+
   return {
-    auth: { user, loading, setUser, logout, signInOpen, setSignInOpen, requireAuth },
-    data: { loadingItems, filteredItems, currentItems, reload },
+    auth: {
+      user,
+      loading,
+      setUser,
+      logout,
+      signInOpen,
+      setSignInOpen,
+      requireAuth,
+    },
+
+    data: {
+      loadingItems,
+      filteredItems,
+      currentItems,
+      reload,
+    },
+
     filters: {
-      searchQuery, setSearchQuery,
-      activeTab, setActiveTab,
-      selectedLocation, setSelectedLocation,
-      selectedCategory, setSelectedCategory,
-      selectedDateRange, setSelectedDateRange,
+      searchQuery,
+      setSearchQuery,
+      activeTab,
+      setActiveTab,
+      selectedLocation,
+      setSelectedLocation,
+      selectedCategory,
+      setSelectedCategory,
+      selectedDateRange,
+      setSelectedDateRange,
       clearFilters,
     },
-    pagination: { currentPage, setCurrentPage, totalPages },
-    dialogs: {
-      selectedItem, setSelectedItem,
-      detailsDialogOpen, setDetailsDialogOpen,
-      reportOpen, setReportOpen,
-      successOpen, setSuccessOpen,
-      successReportType, setSuccessReportType,
-      itemMessagesDialogOpen, setItemMessagesDialogOpen,
-      itemMessagesItemId, setItemMessagesItemId,
+
+    pagination: {
+      currentPage,
+      setCurrentPage,
+      totalPages,
     },
-    actions: { openReport, openDetails, onReportSuccess },
+
+    dialogs: {
+      selectedItem,
+      setSelectedItem,
+      detailsDialogOpen,
+      setDetailsDialogOpen,
+      reportOpen,
+      setReportOpen,
+      successOpen,
+      setSuccessOpen,
+      successReportType,
+      setSuccessReportType,
+      itemMessagesDialogOpen,
+      setItemMessagesDialogOpen,
+      itemMessagesItemId,
+      setItemMessagesItemId,
+      requestOpenMessagesForItem,
+      consumePendingMessagesIntent,
+      consumePendingReportIntent,
+    },
+
+    actions: {
+      openReport,
+      openDetails,
+      onReportSuccess
+    },
   };
 }

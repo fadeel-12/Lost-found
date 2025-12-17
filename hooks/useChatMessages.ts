@@ -1,174 +1,142 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseClient = createClient(
+export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 );
 
-export type ChatMessage = {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  isOwn: boolean;
-};
-
-type UseChatMessagesOptions = {
+type UseChatMessagesArgs = {
   chatId: string | null;
   currentUserId: string | null;
 };
 
-export function useChatMessages({ chatId, currentUserId }: UseChatMessagesOptions) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export type UIMessage = {
+  id: string;
+  text: string;
+  createdAt: string;
+  isOwn: boolean;
+  is_read: boolean;
+};
+
+export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) {
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mapDbMessage = useCallback(
-    (m: any): ChatMessage => ({
-      id: m.id,
-      text: m.message,
-      senderId: m.sender_id,
-      createdAt: m.created_at,
-      isOwn: !!currentUserId && m.sender_id === currentUserId,
-    }),
-    [currentUserId]
-  );
+  const canUse = useMemo(() => !!chatId && !!currentUserId, [chatId, currentUserId]);
 
-  useEffect(() => {
-    if (!chatId || !currentUserId) {
+  const fetchMessages = useCallback(async () => {
+    if (!chatId) {
       setMessages([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id, sender_id, message, is_read, created_at")
+      .eq("chat_id", chatId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      setError(error.message);
       setLoading(false);
       return;
     }
 
-    let aborted = false;
+    const mapped: UIMessage[] =
+      data?.map((row) => ({
+        id: row.id,
+        text: row.message,
+        createdAt: row.created_at,
+        is_read: !!row.is_read,
+        isOwn: currentUserId ? row.sender_id === currentUserId : false,
+      })) ?? [];
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    setMessages(mapped);
+    setLoading(false);
+  }, [chatId, currentUserId]);
 
-        const res = await fetch(`/api/chats/${chatId}/messages`);
-        if (!res.ok) {
-          setError("Failed to load messages");
-          return;
-        }
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!canUse) return;
 
-        const data = await res.json();
-        const raw = Array.isArray(data?.messages) ? data.messages : [];
+      setSending(true);
+      setError(null);
 
-        if (!aborted) {
-          setMessages(raw.map(mapDbMessage));
-        }
-      } catch (err) {
-        if (!aborted) setError("Failed to load messages");
-        console.error("load messages error", err);
-      } finally {
-        if (!aborted) setLoading(false);
-      }
-    };
+      const { error } = await supabase.from("messages").insert({
+        chat_id: chatId,
+        sender_id: currentUserId,
+        message: text,
+        is_read: false,
+      });
 
-    load();
-    return () => {
-      aborted = true;
-    };
-  }, [chatId, currentUserId, mapDbMessage]);
+      if (error) setError(error.message);
+      setSending(false);
+    },
+    [canUse, chatId, currentUserId]
+  );
+
+  const markChatAsRead = useCallback(async () => {
+    if (!canUse) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("chat_id", chatId)
+      .neq("sender_id", currentUserId)
+      .eq("is_read", false);
+
+    if (error) {
+      console.error("markChatAsRead:", error.message);
+      return;
+    }
+
+    setMessages((prev) =>
+      prev.map((m) => (m.isOwn ? m : { ...m, is_read: true }))
+    );
+  }, [canUse, chatId, currentUserId]);
 
   useEffect(() => {
-    if (!chatId || !currentUserId) return;
+    fetchMessages();
+  }, [fetchMessages]);
 
-    const channel = supabaseClient
-      .channel(`chat:${chatId}`)
+  useEffect(() => {
+    if (!chatId) return;
+
+    const channel = supabase
+      .channel(`messages:${chatId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "messages",
           filter: `chat_id=eq.${chatId}`,
         },
-        (payload) => {
-          const m = payload.new as any;
-          setMessages((prev) => {
-            if (prev.some((msg) => msg.id === m.id)) return prev;
-
-            const withoutTemps = prev.filter(
-              (msg) =>
-                !msg.id.startsWith("temp-") ||
-                msg.senderId !== m.sender_id ||
-                msg.text !== m.message
-            );
-
-            return [...withoutTemps, mapDbMessage(m)];
-          });
+        () => {
+          fetchMessages();
         }
       )
       .subscribe();
 
     return () => {
-      supabaseClient.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
-  }, [chatId, currentUserId, mapDbMessage]);
+  }, [chatId, fetchMessages]);
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      if (!chatId || !currentUserId || !text.trim() || sending) return;
-
-      const trimmed = text.trim();
-      setSending(true);
-      setError(null);
-
-      const tempId = `temp-${Date.now()}`;
-      const optimistic: ChatMessage = {
-        id: tempId,
-        text: trimmed,
-        senderId: currentUserId,
-        createdAt: new Date().toISOString(),
-        isOwn: true,
-      };
-
-      setMessages((prev) => [...prev, optimistic]);
-
-      try {
-        const res = await fetch(`/api/chats/${chatId}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: trimmed }),
-        });
-
-        if (!res.ok) {
-          console.error("Failed to send message");
-          setError("Failed to send message");
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
-          return;
-        }
-
-        const data = await res.json();
-        const saved = data?.message;
-
-        if (saved) {
-          setMessages((prev) => {
-            let withoutTemp = prev.filter((m) => m.id !== tempId);
-            if (withoutTemp.some((m) => m.id === saved.id)) {
-              return withoutTemp;
-            }
-            return [...withoutTemp, mapDbMessage(saved)];
-          });
-        }
-      } catch (err) {
-        console.error("sendMessage error", err);
-        setError("Failed to send message");
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      } finally {
-        setSending(false);
-      }
-    },
-    [chatId, currentUserId, sending, mapDbMessage]
-  );
-
-  return { messages, loading, sending, error, sendMessage };
+  return {
+    messages,
+    loading,
+    sending,
+    error,
+    sendMessage,
+    markChatAsRead,
+  };
 }

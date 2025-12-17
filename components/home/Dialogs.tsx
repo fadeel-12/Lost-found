@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SuccessDialog } from "@/components/dialogs/SuccessDialog";
 import { ReportItemDialog } from "@/components/dialogs/ReportItemDialog";
 import { ItemDetailsDialog } from "@/components/dialogs/ItemDetailsDialog";
@@ -29,6 +30,11 @@ type Props = {
   setItemMessagesDialogOpen: (v: boolean) => void;
   itemMessagesItemId: string | null;
   setItemMessagesItemId: (v: string | null) => void;
+
+  requestOpenMessagesForItem: (itemId: string | null) => void;
+
+  consumePendingMessagesIntent: () => { shouldOpen: boolean; itemId: string | null };
+  consumePendingReportIntent: () => { shouldOpen: boolean };
 };
 
 export function Dialogs({
@@ -50,7 +56,44 @@ export function Dialogs({
   setItemMessagesDialogOpen,
   itemMessagesItemId,
   setItemMessagesItemId,
+  requestOpenMessagesForItem,
+  consumePendingMessagesIntent,
+  consumePendingReportIntent,
 }: Props) {
+  const [signUpOpen, setSignUpOpen] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [verifyEmailOpen, setVerifyEmailOpen] = useState(false);
+
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
+
+  const closeAllAuth = () => {
+    setSignInOpen(false);
+    setSignUpOpen(false);
+    setForgotOpen(false);
+    setVerifyEmailOpen(false);
+  };
+
+  const openMessages = (itemId: string) => {
+    setItemMessagesItemId(itemId);
+    setItemMessagesDialogOpen(true);
+  };
+
+  const startChatAndOpenMessages = async (itemId: string) => {
+    try {
+      const res = await fetch("/api/chats/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId }),
+      });
+      openMessages(itemId);
+      return res.ok;
+    } catch {
+      openMessages(itemId);
+      return false;
+    }
+  };
+
   return (
     <>
       <SuccessDialog
@@ -74,23 +117,20 @@ export function Dialogs({
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
         item={selectedItem}
-        onContactOwner={() =>
-          requireAuth(async () => {
-            const res = await fetch("/api/chats/start", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ itemId: selectedItem?.id }),
+        onContactOwner={() => {
+          const itemId = selectedItem?.id ?? null;
+
+          requestOpenMessagesForItem(itemId);
+
+          if (user && itemId) {
+            requireAuth(async () => {
+              await startChatAndOpenMessages(itemId);
             });
-            if (!res.ok) return;
-            setDetailsDialogOpen(false);
-            setItemMessagesItemId(selectedItem?.id ?? null);
-            setItemMessagesDialogOpen(true);
-          })
-        }
+          }
+        }}
         onOpenItemMessages={(itemId) => {
           setDetailsDialogOpen(false);
-          setItemMessagesItemId(itemId);
-          setItemMessagesDialogOpen(true);
+          openMessages(itemId);
         }}
         currentUserId={user?.id ?? null}
       />
@@ -105,17 +145,35 @@ export function Dialogs({
       <AuthDialogs
         signInOpen={signInOpen}
         onSignInOpenChange={setSignInOpen}
-        signUpOpen={false}
-        onSignUpOpenChange={() => {}}
-        verifyEmailOpen={false}
-        onVerifyEmailOpenChange={() => {}}
-        verifyEmail={""}
-        setVerifyEmail={() => {}}
-        forgotOpen={false}
-        onForgotOpenChange={() => {}}
-        forgotEmail={""}
-        setForgotEmail={() => {}}
-        onSignedIn={(u) => setUser(u)}
+        signUpOpen={signUpOpen}
+        onSignUpOpenChange={setSignUpOpen}
+        verifyEmailOpen={verifyEmailOpen}
+        onVerifyEmailOpenChange={setVerifyEmailOpen}
+        verifyEmail={verifyEmail}
+        setVerifyEmail={setVerifyEmail}
+        forgotOpen={forgotOpen}
+        onForgotOpenChange={setForgotOpen}
+        forgotEmail={forgotEmail}
+        setForgotEmail={setForgotEmail}
+        onSignedIn={async (u) => {
+          setUser(u);
+
+          const msgIntent = consumePendingMessagesIntent();
+          if (msgIntent.shouldOpen && msgIntent.itemId) {
+            closeAllAuth();
+            await startChatAndOpenMessages(msgIntent.itemId);
+            return;
+          }
+
+          const reportIntent = consumePendingReportIntent();
+          if (reportIntent.shouldOpen) {
+            closeAllAuth();
+            setReportOpen(true);
+            return;
+          }
+
+          closeAllAuth();
+        }}
       />
     </>
   );

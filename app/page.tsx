@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
+import { useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/home/Header";
 import { ItemsSection } from "@/components/home/ItemsSection";
 import { Dialogs } from "@/components/home/Dialogs";
@@ -22,6 +23,24 @@ export default function Home() {
 
 function HomeContent() {
   const c = useHomeController();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const signIn = searchParams.get("showSignIn");
+
+    if (signIn !== "true") return;
+
+    if (c.auth.loading) return;
+
+    if (!c.auth.user) {
+      c.auth.setSignInOpen(true);
+    } else {
+      c.auth.setSignInOpen(false);
+    }
+
+    router.replace("/", { scroll: false });
+  }, [searchParams, router, c.auth.loading, c.auth.user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,6 +96,9 @@ function HomeContent() {
         setItemMessagesDialogOpen={c.dialogs.setItemMessagesDialogOpen}
         itemMessagesItemId={c.dialogs.itemMessagesItemId}
         setItemMessagesItemId={c.dialogs.setItemMessagesItemId}
+        requestOpenMessagesForItem={c.dialogs.requestOpenMessagesForItem}
+        consumePendingMessagesIntent={c.dialogs.consumePendingMessagesIntent}
+        consumePendingReportIntent={c.dialogs.consumePendingReportIntent}
       />
     </div>
   );
