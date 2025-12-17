@@ -22,64 +22,63 @@ type AuthDialogsProps = {
   onSignedIn: (user: User) => void;
 };
 
-export function AuthDialogs({
-  signInOpen,
-  signUpOpen,
-  verifyEmailOpen,
-  verifyEmail,
-  forgotOpen,
-  forgotEmail,
-  onSignInOpenChange,
-  onSignUpOpenChange,
-  onVerifyEmailOpenChange,
-  setVerifyEmail,
-  onForgotOpenChange,
-  setForgotEmail,
-  onSignedIn,
-}: AuthDialogsProps) {
-  const handleSwitchToSignUp = () => {
-    onSignInOpenChange(false);
-    onSignUpOpenChange(true);
+export function AuthDialogs(props: AuthDialogsProps) {
+  const closeAll = () => {
+    props.onSignInOpenChange(false);
+    props.onSignUpOpenChange(false);
+    props.onVerifyEmailOpenChange(false);
+    props.onForgotOpenChange(false);
   };
 
-  const handleSwitchToSignIn = () => {
-    onSignUpOpenChange(false);
-    onSignInOpenChange(true);
+  const openSignUp = () => {
+    closeAll();
+    props.onSignUpOpenChange(true);
+  };
+
+  const openSignIn = () => {
+    closeAll();
+    props.onSignInOpenChange(true);
+  };
+
+  const openVerify = (email: string) => {
+    closeAll();
+    props.setVerifyEmail(email);
+    props.onVerifyEmailOpenChange(true);
+  };
+
+  const openForgot = (email?: string) => {
+    closeAll();
+    props.setForgotEmail(email || "");
+    props.onForgotOpenChange(true);
   };
 
   return (
     <>
       <SignUpDialog
-        open={signUpOpen}
-        onOpenChange={onSignUpOpenChange}
-        onSwitchToSignIn={handleSwitchToSignIn}
+        open={props.signUpOpen}
+        onOpenChange={props.onSignUpOpenChange}
+        onSwitchToSignIn={openSignIn}
       />
 
       <SignInDialog
-        open={signInOpen}
-        onOpenChange={onSignInOpenChange}
-        onSwitchToSignUp={handleSwitchToSignUp}
-        onEmailNotVerified={(email) => {
-          setVerifyEmail(email);
-          onVerifyEmailOpenChange(true);
-        }}
-        onForgotPassword={(email) => {
-          setForgotEmail(email || "");
-          onForgotOpenChange(true);
-        }}
-        onSignedIn={onSignedIn}
+        open={props.signInOpen}
+        onOpenChange={props.onSignInOpenChange}
+        onSwitchToSignUp={openSignUp}
+        onEmailNotVerified={openVerify}
+        onForgotPassword={openForgot}
+        onSignedIn={props.onSignedIn}
       />
 
       <VerifyEmailDialog
-        open={verifyEmailOpen}
-        email={verifyEmail}
-        onOpenChange={onVerifyEmailOpenChange}
+        open={props.verifyEmailOpen}
+        email={props.verifyEmail}
+        onOpenChange={props.onVerifyEmailOpenChange}
       />
 
       <ForgotPasswordDialog
-        open={forgotOpen}
-        onOpenChange={onForgotOpenChange}
-        forgotEmail={forgotEmail}
+        open={props.forgotOpen}
+        onOpenChange={props.onForgotOpenChange}
+        forgotEmail={props.forgotEmail}
       />
     </>
   );

@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -65,31 +64,36 @@ export function ItemMessagesDialog({
         const all = Array.isArray(data?.chats) ? data.chats : [];
 
         const itemChats: ItemChatSummary[] = all
-          .filter((c: any) => c.itemId === itemId)
+          .filter((c: any) => (c.itemId ?? c.item_id) === itemId)
           .map((c: any) => ({
             id: c.id,
-            itemId: c.itemId,
-            itemTitle: c.itemTitle,
-            itemType: c.itemType,
-            otherUserId: c.otherUserId,
-            otherUserName: c.otherUserName,
-            otherUserEmail: c.otherUserEmail,
-            lastMessage: c.lastMessage,
-            lastMessageAt: c.lastMessageAt,
+            itemId: c.itemId ?? c.item_id ?? null,
+            itemTitle: c.itemTitle ?? c.item_title ?? "Item",
+            itemType: c.itemType ?? c.item_type ?? null,
+            otherUserId: c.otherUserId ?? c.other_user_id ?? null,
+            otherUserName: c.otherUserName ?? c.other_user_name ?? "User",
+            otherUserEmail: c.otherUserEmail ?? c.other_user_email ?? "",
+            lastMessage: c.lastMessage ?? c.last_message ?? null,
+            lastMessageAt: c.lastMessageAt ?? c.last_message_at ?? "",
           }));
 
         if (cancelled) return;
 
         setChats(itemChats);
 
-        // pick active chat
-        if (itemChats.length === 0) {
-          setActiveChatId(null);
-        } else if (initialChatId && itemChats.some((c) => c.id === initialChatId)) {
-          setActiveChatId(initialChatId);
-        } else if (!activeChatId || !itemChats.some((c) => c.id === activeChatId)) {
-          setActiveChatId(itemChats[0].id);
-        }
+        setActiveChatId((prev) => {
+          if (itemChats.length === 0) return null;
+
+          if (initialChatId && itemChats.some((x) => x.id === initialChatId)) {
+            return initialChatId;
+          }
+
+          if (prev && itemChats.some((x) => x.id === prev)) {
+            return prev;
+          }
+
+          return itemChats[0].id;
+        });
       } catch (err) {
         console.error("load item chats error", err);
       } finally {
@@ -102,15 +106,10 @@ export function ItemMessagesDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, itemId, currentUserId]);
+  }, [open, itemId, currentUserId, initialChatId]);
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
-  const headerTitle = activeChat
-    ? `Chat with ${activeChat.otherUserName}`
-    : "Messages";
-  const headerSubtitle = activeChat
-    ? `Regarding item: ${activeChat.itemTitle}`
-    : undefined;
+  const headerTitle = activeChat ? `Chat with ${activeChat.otherUserName}` : "Messages";
 
   return (
     <Dialog
@@ -129,27 +128,18 @@ export function ItemMessagesDialog({
             <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-blue-600" />
             </div>
-            <div>
-              <DialogTitle className="text-base">
-                {headerTitle}
-              </DialogTitle>
-              <DialogDescription>
-                View and reply to all conversations
-              </DialogDescription>
+            <div className="min-w-0">
+              <DialogTitle className="text-base">{headerTitle}</DialogTitle>
             </div>
           </div>
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0 gap-4">
           <div className="w-64 border-r pr-3 flex flex-col">
-            <p className="text-xs text-gray-500 mb-2">
-              Conversations
-            </p>
+            <p className="text-xs text-gray-500 mb-2">Conversations</p>
             <div className="flex-1 overflow-y-auto">
               {loadingChats ? (
-                <p className="text-sm text-gray-500 mt-4 text-center">
-                  Loading chats…
-                </p>
+                <p className="text-sm text-gray-500 mt-4 text-center">Loading chats…</p>
               ) : chats.length === 0 ? (
                 <p className="text-sm text-gray-500 mt-4 text-center px-2">
                   No conversations yet
@@ -161,16 +151,12 @@ export function ItemMessagesDialog({
                       key={chat.id}
                       type="button"
                       onClick={() => setActiveChatId(chat.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition
-                        ${
-                          activeChatId === chat.id
-                            ? "bg-blue-50 border-blue-200"
-                            : "bg-white hover:bg-gray-50 border-gray-200"
+                      className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition ${activeChatId === chat.id
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-white hover:bg-gray-50 border-gray-200"
                         }`}
                     >
-                      <div className="font-medium truncate">
-                        {chat.otherUserName}
-                      </div>
+                      <div className="font-medium truncate">{chat.otherUserName}</div>
                       <div className="text-[11px] text-gray-500 truncate">
                         {chat.lastMessage || "No messages yet"}
                       </div>
@@ -187,13 +173,10 @@ export function ItemMessagesDialog({
                 chatId={activeChatId}
                 currentUserId={currentUserId}
                 title={headerTitle}
-                subtitle={headerSubtitle}
               />
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-gray-500">
-                {chats.length === 0
-                  ? "No conversations yet."
-                  : "Select a conversation from the left."}
+                {chats.length === 0 ? "No conversations yet." : "Select a conversation from the left."}
               </div>
             )}
           </div>
