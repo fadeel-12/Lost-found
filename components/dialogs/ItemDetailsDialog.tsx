@@ -7,6 +7,8 @@ import {
   Mail,
   Phone,
   MessageCircle,
+  CheckCircle,
+  Trash2,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,11 +26,13 @@ interface ItemDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onContactOwner: () => void;
+  onMarkRecovered: () => void;
+  onDeleteItem: () => void;
   item: {
     id: string;
     title: string;
     category: string;
-    status: 'lost' | 'found';
+    type: 'lost' | 'found';
     location: string;
     date: string;
     imageUrl: string;
@@ -37,6 +41,7 @@ interface ItemDetailsDialogProps {
     contactEmail?: string;
     contactPhone?: string;
     user_id?: string;
+    status?: "open" | "recovered" | "deleted";
   } | null;
   currentUserId: string | null;
   onOpenItemMessages: (itemId: string) => void;
@@ -48,6 +53,8 @@ export function ItemDetailsDialog({
   item,
   currentUserId,
   onContactOwner,
+  onMarkRecovered,
+  onDeleteItem,
   onOpenItemMessages,
 }: ItemDetailsDialogProps) {
   if (!item) return null;
@@ -60,19 +67,19 @@ export function ItemDetailsDialog({
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="pr-8">{item.title}</DialogTitle>
-            <Badge variant={item.status === 'lost' ? 'destructive' : 'default'} className="shrink-0">
-              {item.status === 'lost' ? 'Lost' : 'Found'}
+            <Badge variant={item.type === 'lost' ? 'destructive' : 'default'} className="shrink-0">
+              {item.type === 'lost' ? 'Lost' : 'Found'}
             </Badge>
           </div>
           <DialogDescription>
-            View detailed information about this {item.status} item
+            View detailed information about this {item.type} item
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
-            <ImageWithFallback 
-              src={item.imageUrl} 
+            <ImageWithFallback
+              src={item.imageUrl}
               alt={item.title}
               className="w-full h-full object-cover"
             />
@@ -85,7 +92,7 @@ export function ItemDetailsDialog({
                 <div className="flex items-start gap-3">
                   <Badge variant="outline" className="mt-1">{item.category}</Badge>
                 </div>
-                
+
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 text-gray-500 mt-0.5 shrink-0" />
                   <div>
@@ -98,7 +105,7 @@ export function ItemDetailsDialog({
                   <Calendar className="h-5 w-5 text-gray-500 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm text-gray-500">
-                      {item.status === 'lost' ? 'Lost on' : 'Found on'}
+                      {item.type === 'lost' ? 'Lost on' : 'Found on'}
                     </p>
                     <p>{item.date}</p>
                   </div>
@@ -164,18 +171,34 @@ export function ItemDetailsDialog({
             )}
 
             {isOwner && (
-              <Button
-                className="flex-1 gap-2"
-                onClick={() => onOpenItemMessages(item.id)}
-              >
-                <MessageCircle className="h-4 w-4" />
-                Messages
-              </Button>
+              <>
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => onOpenItemMessages(item.id)}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Messages
+                </Button>
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={onMarkRecovered}
+                  variant="outline"
+                  disabled={item.status !== "open"}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark as Recovered
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={onDeleteItem}
+                  className="flex-1 gap-2"
+                  disabled={item.status !== "open"}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Item
+                </Button>
+              </>
             )}
-
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
           </div>
         </div>
       </DialogContent>

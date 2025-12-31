@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { SuccessDialog } from "@/components/dialogs/SuccessDialog";
 import { ReportItemDialog } from "@/components/dialogs/ReportItemDialog";
 import { ItemDetailsDialog } from "@/components/dialogs/ItemDetailsDialog";
 import { ItemMessagesDialog } from "@/components/dialogs/ItemMessagesDialog";
 import { AuthDialogs } from "@/components/dialogs/AuthDialogs";
+import { EditProfileDialog } from "@/components/dialogs/EditProfileDialog";
+import { MyItemsDialog } from "@/components/dialogs/MyItemsDialog";
 
 type Props = {
   user: any;
@@ -21,10 +24,13 @@ type Props = {
   setSuccessOpen: (v: boolean) => void;
   successReportType: "lost" | "found";
   onReportSuccess: (t: "lost" | "found") => void;
+  onDelete: (itemId: string) => Promise<void>;
+  onRecover: (itemId: string) => Promise<void>;
 
   detailsDialogOpen: boolean;
   setDetailsDialogOpen: (v: boolean) => void;
   selectedItem: any;
+  setSelectedItem: (item: any) => void;
 
   itemMessagesDialogOpen: boolean;
   setItemMessagesDialogOpen: (v: boolean) => void;
@@ -35,6 +41,17 @@ type Props = {
 
   consumePendingMessagesIntent: () => { shouldOpen: boolean; itemId: string | null };
   consumePendingReportIntent: () => { shouldOpen: boolean };
+
+  editProfileOpen: boolean;
+  setEditProfileOpen: (v: boolean) => void;
+
+  myItemsOpen: boolean;
+  setMyItemsOpen: (v: boolean) => void;
+
+  userProfile: any;
+  onUpdateProfile: (p: any) => Promise<void>;
+  lostItems: any[];
+  foundItems: any[];
 
   initialChatId: string | null;
   setInitialChatId: (v: string | null) => void;
@@ -55,6 +72,7 @@ export function Dialogs({
   detailsDialogOpen,
   setDetailsDialogOpen,
   selectedItem,
+  setSelectedItem,
   itemMessagesDialogOpen,
   setItemMessagesDialogOpen,
   itemMessagesItemId,
@@ -64,6 +82,16 @@ export function Dialogs({
   consumePendingReportIntent,
   initialChatId,
   setInitialChatId,
+  editProfileOpen,
+  setEditProfileOpen,
+  myItemsOpen,
+  setMyItemsOpen,
+  userProfile,
+  onUpdateProfile,
+  lostItems,
+  foundItems,
+  onRecover,
+  onDelete
 }: Props) {
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -147,6 +175,22 @@ export function Dialogs({
             await startChatAndOpenMessages(itemId);
           });
         }}
+        onMarkRecovered={() => {
+          const itemId = selectedItem?.id ?? null;
+          if (!itemId) return;
+          setDetailsDialogOpen(false);
+          requireAuth(async () => {
+            await onRecover(itemId);
+          });
+        }}
+        onDeleteItem={() => {
+          const itemId = selectedItem?.id ?? null;
+          if (!itemId) return;
+          setDetailsDialogOpen(false);
+          requireAuth(async () => {
+            await onDelete(itemId);
+          });
+        }}
         onOpenItemMessages={(itemId) => {
           setDetailsDialogOpen(false);
           openMessages(itemId);
@@ -165,6 +209,26 @@ export function Dialogs({
         initialChatId={initialChatId}
         initialChatMeta={initialChatMeta}
       />
+
+      <EditProfileDialog
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+        userProfile={userProfile}
+        onUpdateProfile={onUpdateProfile}
+      />
+
+      <MyItemsDialog
+        open={myItemsOpen}
+        onOpenChange={setMyItemsOpen}
+        lostItems={lostItems}
+        foundItems={foundItems}
+        onItemClick={(item) => {
+          setMyItemsOpen(false);
+          setSelectedItem(item);
+          setDetailsDialogOpen(true);
+        }}
+      />
+
 
       <AuthDialogs
         signInOpen={signInOpen}

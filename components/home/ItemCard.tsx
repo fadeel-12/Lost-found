@@ -7,7 +7,7 @@ interface ItemCardProps {
   id: string;
   title: string;
   category: string;
-  status: 'lost' | 'found';
+  type: 'lost' | 'found';
   location: string;
   date: string;
   imageUrl: string;
@@ -15,7 +15,7 @@ interface ItemCardProps {
   onClick?: () => void;
 }
 
-export function ItemCard({ title, category, status, location, date, imageUrl, description, onClick }: ItemCardProps) {
+export function ItemCard({ title, category, type, location, date, imageUrl, description, onClick }: ItemCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={onClick}>
       <div className="aspect-video w-full overflow-hidden bg-gray-100">
@@ -28,8 +28,8 @@ export function ItemCard({ title, category, status, location, date, imageUrl, de
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="line-clamp-1">{title}</CardTitle>
-          <Badge variant={status === 'lost' ? 'destructive' : 'default'}>
-            {status === 'lost' ? 'Lost' : 'Found'}
+          <Badge variant={type === 'lost' ? 'destructive' : 'default'}>
+            {type === 'lost' ? 'Lost' : 'Found'}
           </Badge>
         </div>
       </CardHeader>

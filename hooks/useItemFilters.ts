@@ -21,7 +21,7 @@ export function useItemFilters(items: any[], f: Filters) {
         item.description?.toLowerCase().includes(q) ||
         item.category?.toLowerCase().includes(q);
 
-      const matchesTab = f.activeTab === "all" || item.status === f.activeTab;
+      const matchesTab = f.activeTab === "all" || item.type === f.activeTab;
 
       const matchesCategory =
         f.selectedCategory === "all" ||
