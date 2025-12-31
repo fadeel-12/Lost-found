@@ -259,9 +259,49 @@ export async function POST(req: NextRequest) {
               `
             );
           }
+
+          if (lostUserId && lostUser?.email) {
+            await supabase.from("notifications").insert([
+              {
+                recipient_user_id: lostUserId,
+                recipient_email: lostUser.email,
+                notification_type: "item_match",
+                message: JSON.stringify({
+                  title: "Potential match found",
+                  text: `We found a possible match for your item: ${newItem.title}`,
+                  itemId: lostItemId,
+                  matchItemId: foundItemId,
+                  createdAt: new Date().toISOString(),
+                }),
+                is_sent: true,
+                is_read: false,
+              },
+            ]);
+          }
+
+          if (foundUserId && foundUser?.email) {
+            await supabase.from("notifications").insert([
+              {
+                recipient_user_id: foundUserId,
+                recipient_email: foundUser.email,
+                notification_type: "item_match",
+                message: JSON.stringify({
+                  title: "Potential match found",
+                  text: `Your found item may match a lost report: ${candidate.title}`,
+                  itemId: foundItemId,
+                  matchItemId: lostItemId,
+                  createdAt: new Date().toISOString(),
+                }),
+                is_sent: true,
+                is_read: false,
+              },
+            ]);
+          }
         }
       }
     }
+
+
 
     return NextResponse.json({ item: newItem }, { status: 201 });
   } catch (err) {

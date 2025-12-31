@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import type { AppNotification } from "@/components/home/NotificationsPanel";
 import { Header } from "@/components/home/Header";
 import { ItemsSection } from "@/components/home/ItemsSection";
 import { Dialogs } from "@/components/home/Dialogs";
@@ -26,6 +27,8 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const [initialChatId, setInitialChatId] = useState<string | null>(null);
+
   useEffect(() => {
     const signIn = searchParams.get("showSignIn");
 
@@ -41,6 +44,23 @@ function HomeContent() {
 
     router.replace("/", { scroll: false });
   }, [searchParams, router, c.auth.loading, c.auth.user]);
+
+  const handleNotificationClick = (n: AppNotification) => {
+    if (n.type === "message" && n.conversationId) {
+      setInitialChatId(n.conversationId);
+      c.dialogs.setItemMessagesItemId(null);
+      c.dialogs.setItemMessagesDialogOpen(true);
+      return;
+    }
+
+    const targetItemId =
+      n.type === "item_match" ? (n.matchItemId ?? null) : (n.itemId ?? null);
+    if (!targetItemId) return;
+    const item = c.data.filteredItems.find((x: any) => x.id === targetItemId);
+    if (item) {
+      c.actions.openDetails(item);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -60,6 +80,11 @@ function HomeContent() {
           onDateRangeChange: c.filters.setSelectedDateRange,
           onClearFilters: c.filters.clearFilters,
         }}
+        notifications={c.notifications.notifications}
+        onNotificationClick={handleNotificationClick}
+        onMarkNotifRead={c.notifications.markAsRead}
+        onMarkAllNotifRead={c.notifications.markAllAsRead}
+        onDeleteNotif={c.notifications.deleteNotification}
       />
 
       <ItemsSection
@@ -99,6 +124,8 @@ function HomeContent() {
         requestOpenMessagesForItem={c.dialogs.requestOpenMessagesForItem}
         consumePendingMessagesIntent={c.dialogs.consumePendingMessagesIntent}
         consumePendingReportIntent={c.dialogs.consumePendingReportIntent}
+        initialChatId={initialChatId}
+        setInitialChatId={setInitialChatId}
       />
     </div>
   );

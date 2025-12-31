@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { LOCATIONS } from "@/components/home/SearchBar";
+import type { AppNotification } from "@/components/home/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useItems } from "@/hooks/useItems";
 import { useItemFilters } from "@/hooks/useItemFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useRequireAuthAction } from "@/hooks/useRequireAuthAction";
+import { useNotifications } from "@/hooks/useNotifications";
 
 type Tab = "all" | "lost" | "found";
 type ReportType = "lost" | "found";
@@ -55,6 +57,13 @@ export function useHomeController() {
   const [pendingOpenMessagesAfterLogin, setPendingOpenMessagesAfterLogin] = useState(false);
   const [pendingOpenReportAfterLogin, setPendingOpenReportAfterLogin] = useState(false);
 
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications(user?.id ?? null);
+
   const clearFilters = () => {
     setSelectedLocation("all");
     setSelectedCategory("all");
@@ -99,6 +108,22 @@ export function useHomeController() {
 
     setItemMessagesItemId(itemId);
     setItemMessagesDialogOpen(true);
+  };
+
+  const openMessagesInbox = () => {
+    setDetailsDialogOpen(false);
+    setItemMessagesItemId(null);
+    setItemMessagesDialogOpen(true);
+  };
+
+  const onNotificationClick = (n: AppNotification) => {
+    if (n.type === "message") {
+      openMessagesInbox();
+      return;
+    }
+    if (n.itemId) {
+      openMessagesInbox();
+    }
   };
 
   const consumePendingMessagesIntent = () => {
@@ -179,7 +204,15 @@ export function useHomeController() {
     actions: {
       openReport,
       openDetails,
-      onReportSuccess
+      onReportSuccess,
+    },
+
+    notifications: {
+      notifications,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      onNotificationClick,
     },
   };
 }
