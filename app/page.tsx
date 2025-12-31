@@ -85,6 +85,14 @@ function HomeContent() {
         onMarkNotifRead={c.notifications.markAsRead}
         onMarkAllNotifRead={c.notifications.markAllAsRead}
         onDeleteNotif={c.notifications.deleteNotification}
+        onEditProfile={async () => {
+          await c.profile.fetchProfile();
+          c.profile.setEditProfileDialogOpen(true);
+        }}
+        onMyItems={async () => {
+          await c.profile.fetchMyItems();
+          c.profile.setMyItemsDialogOpen(true);
+        }}
       />
 
       <ItemsSection
@@ -114,9 +122,12 @@ function HomeContent() {
         setSuccessOpen={c.dialogs.setSuccessOpen}
         successReportType={c.dialogs.successReportType}
         onReportSuccess={c.actions.onReportSuccess}
+        onRecover={c.actions.handleRecover}
+        onDelete={c.actions.handleDelete}
         detailsDialogOpen={c.dialogs.detailsDialogOpen}
         setDetailsDialogOpen={c.dialogs.setDetailsDialogOpen}
         selectedItem={c.dialogs.selectedItem}
+        setSelectedItem={c.dialogs.setSelectedItem}
         itemMessagesDialogOpen={c.dialogs.itemMessagesDialogOpen}
         setItemMessagesDialogOpen={c.dialogs.setItemMessagesDialogOpen}
         itemMessagesItemId={c.dialogs.itemMessagesItemId}
@@ -124,6 +135,14 @@ function HomeContent() {
         requestOpenMessagesForItem={c.dialogs.requestOpenMessagesForItem}
         consumePendingMessagesIntent={c.dialogs.consumePendingMessagesIntent}
         consumePendingReportIntent={c.dialogs.consumePendingReportIntent}
+        editProfileOpen={c.profile.editProfileDialogOpen}
+        setEditProfileOpen={c.profile.setEditProfileDialogOpen}
+        myItemsOpen={c.profile.myItemsDialogOpen}
+        setMyItemsOpen={c.profile.setMyItemsDialogOpen}
+        userProfile={c.profile.profile}
+        onUpdateProfile={c.profile.updateProfile}
+        lostItems={c.profile.lostItems}
+        foundItems={c.profile.foundItems}
         initialChatId={initialChatId}
         setInitialChatId={setInitialChatId}
       />
