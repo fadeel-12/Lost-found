@@ -35,6 +35,9 @@ type Props = {
 
   consumePendingMessagesIntent: () => { shouldOpen: boolean; itemId: string | null };
   consumePendingReportIntent: () => { shouldOpen: boolean };
+
+  initialChatId: string | null;
+  setInitialChatId: (v: string | null) => void;
 };
 
 export function Dialogs({
@@ -59,6 +62,8 @@ export function Dialogs({
   requestOpenMessagesForItem,
   consumePendingMessagesIntent,
   consumePendingReportIntent,
+  initialChatId,
+  setInitialChatId,
 }: Props) {
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -66,6 +71,7 @@ export function Dialogs({
 
   const [verifyEmail, setVerifyEmail] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
+  const [initialChatMeta, setInitialChatMeta] = useState<{ otherUserName?: string; itemTitle?: string } | null>(null);
 
   const closeAllAuth = () => {
     setSignInOpen(false);
@@ -86,10 +92,26 @@ export function Dialogs({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId }),
       });
-      openMessages(itemId);
-      return res.ok;
+
+      const data = await res.json();
+      const chatId = data?.chatId ?? data?.chat?.id ?? null;
+
+      if (chatId) {
+        setInitialChatId(chatId);
+
+        setInitialChatMeta({
+          otherUserName: data?.otherUser?.name,
+          itemTitle: data?.item?.title,
+        });
+      }
+
+      setItemMessagesItemId(null);
+      setItemMessagesDialogOpen(true);
+
+      return true;
     } catch {
-      openMessages(itemId);
+      setItemMessagesItemId(null);
+      setItemMessagesDialogOpen(true);
       return false;
     }
   };
@@ -119,14 +141,11 @@ export function Dialogs({
         item={selectedItem}
         onContactOwner={() => {
           const itemId = selectedItem?.id ?? null;
-
-          requestOpenMessagesForItem(itemId);
-
-          if (user && itemId) {
-            requireAuth(async () => {
-              await startChatAndOpenMessages(itemId);
-            });
-          }
+          if (!itemId) return;
+          setDetailsDialogOpen(false);
+          requireAuth(async () => {
+            await startChatAndOpenMessages(itemId);
+          });
         }}
         onOpenItemMessages={(itemId) => {
           setDetailsDialogOpen(false);
@@ -137,9 +156,14 @@ export function Dialogs({
 
       <ItemMessagesDialog
         open={itemMessagesDialogOpen}
-        onOpenChange={setItemMessagesDialogOpen}
+        onOpenChange={(open) => {
+          setItemMessagesDialogOpen(open);
+          if (!open) setInitialChatId(null);
+        }}
         itemId={itemMessagesItemId}
         currentUserId={user?.id ?? null}
+        initialChatId={initialChatId}
+        initialChatMeta={initialChatMeta}
       />
 
       <AuthDialogs

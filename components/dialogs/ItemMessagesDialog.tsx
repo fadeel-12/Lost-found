@@ -29,6 +29,10 @@ interface ItemMessagesDialogProps {
   itemId: string | null;
   currentUserId: string | null;
   initialChatId?: string | null;
+  initialChatMeta?: {
+    otherUserName?: string;
+    itemTitle?: string;
+  } | null;
 }
 
 export function ItemMessagesDialog({
@@ -37,13 +41,14 @@ export function ItemMessagesDialog({
   itemId,
   currentUserId,
   initialChatId,
+  initialChatMeta,
 }: ItemMessagesDialogProps) {
   const [chats, setChats] = useState<ItemChatSummary[]>([]);
   const [loadingChats, setLoadingChats] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !itemId || !currentUserId) {
+    if (!open || !currentUserId) {
       setChats([]);
       setActiveChatId(null);
       return;
@@ -63,36 +68,38 @@ export function ItemMessagesDialog({
         const data = await res.json();
         const all = Array.isArray(data?.chats) ? data.chats : [];
 
-        const itemChats: ItemChatSummary[] = all
-          .filter((c: any) => (c.itemId ?? c.item_id) === itemId)
-          .map((c: any) => ({
-            id: c.id,
-            itemId: c.itemId ?? c.item_id ?? null,
-            itemTitle: c.itemTitle ?? c.item_title ?? "Item",
-            itemType: c.itemType ?? c.item_type ?? null,
-            otherUserId: c.otherUserId ?? c.other_user_id ?? null,
-            otherUserName: c.otherUserName ?? c.other_user_name ?? "User",
-            otherUserEmail: c.otherUserEmail ?? c.other_user_email ?? "",
-            lastMessage: c.lastMessage ?? c.last_message ?? null,
-            lastMessageAt: c.lastMessageAt ?? c.last_message_at ?? "",
-          }));
+        const filtered = itemId
+          ? all.filter((c: any) => (c.itemId ?? c.item_id) === itemId)
+          : all;
+
+        const mapped: ItemChatSummary[] = filtered.map((c: any) => ({
+          id: c.id,
+          itemId: c.itemId ?? c.item_id ?? null,
+          itemTitle: c.itemTitle ?? c.item_title ?? "Item",
+          itemType: c.itemType ?? c.item_type ?? null,
+          otherUserId: c.otherUserId ?? c.other_user_id ?? null,
+          otherUserName: c.otherUserName ?? c.other_user_name ?? "User",
+          otherUserEmail: c.otherUserEmail ?? c.other_user_email ?? "",
+          lastMessage: c.lastMessage ?? c.last_message ?? null,
+          lastMessageAt: c.lastMessageAt ?? c.last_message_at ?? "",
+        }));
 
         if (cancelled) return;
 
-        setChats(itemChats);
+        setChats(mapped);
 
         setActiveChatId((prev) => {
-          if (itemChats.length === 0) return null;
+          if (mapped.length === 0) return null;
 
-          if (initialChatId && itemChats.some((x) => x.id === initialChatId)) {
+          if (initialChatId && mapped.some((x) => x.id === initialChatId)) {
             return initialChatId;
           }
 
-          if (prev && itemChats.some((x) => x.id === prev)) {
+          if (prev && mapped.some((x) => x.id === prev)) {
             return prev;
           }
 
-          return itemChats[0].id;
+          return mapped[0].id;
         });
       } catch (err) {
         console.error("load item chats error", err);
@@ -109,7 +116,13 @@ export function ItemMessagesDialog({
   }, [open, itemId, currentUserId, initialChatId]);
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
-  const headerTitle = activeChat ? `Chat with ${activeChat.otherUserName}` : "Messages";
+  const headerTitle =
+    activeChat?.otherUserName
+      ? `Chat with ${activeChat.otherUserName}`
+      : initialChatMeta?.otherUserName
+        ? `Chat with ${initialChatMeta.otherUserName}`
+        : "Messages";
+  const effectiveChatId = activeChatId ?? initialChatId ?? null;
 
   return (
     <Dialog
@@ -152,8 +165,8 @@ export function ItemMessagesDialog({
                       type="button"
                       onClick={() => setActiveChatId(chat.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition ${activeChatId === chat.id
-                          ? "bg-blue-50 border-blue-200"
-                          : "bg-white hover:bg-gray-50 border-gray-200"
+                        ? "bg-blue-50 border-blue-200"
+                        : "bg-white hover:bg-gray-50 border-gray-200"
                         }`}
                     >
                       <div className="font-medium truncate">{chat.otherUserName}</div>
@@ -168,9 +181,9 @@ export function ItemMessagesDialog({
           </div>
 
           <div className="flex-1 min-w-0">
-            {activeChatId && currentUserId ? (
+            {effectiveChatId && currentUserId ? (
               <ChatWindow
-                chatId={activeChatId}
+                chatId={effectiveChatId}
                 currentUserId={currentUserId}
                 title={headerTitle}
               />

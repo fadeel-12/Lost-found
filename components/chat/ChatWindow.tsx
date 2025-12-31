@@ -45,7 +45,15 @@ export function ChatWindow({
       (m) => !m.isOwn && m.is_read === false
     );
 
-    if (hasUnreadIncoming) markChatAsRead();
+    if (!hasUnreadIncoming) return;
+
+    markChatAsRead();
+
+    fetch("/api/notifications/mark-chat-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversationId: chatId }),
+    }).catch(() => { });
   }, [chatId, currentUserId, messages, markChatAsRead]);
 
   const canSend = !!chatId && !!currentUserId && !!input.trim() && !sending;
@@ -109,11 +117,10 @@ export function ChatWindow({
                   className={`flex ${msg.isOwn ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                      msg.isOwn
-                        ? "bg-black text-white rounded-br-sm"
-                        : "bg-white text-gray-900 border rounded-bl-sm"
-                    }`}
+                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm ${msg.isOwn
+                      ? "bg-black text-white rounded-br-sm"
+                      : "bg-white text-gray-900 border rounded-bl-sm"
+                      }`}
                   >
                     <p className="whitespace-pre-wrap break-words">{msg.text}</p>
 
