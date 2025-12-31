@@ -8,6 +8,7 @@ import {
   NotificationsPanel,
   type AppNotification,
 } from "@/components/home/NotificationsPanel";
+import { ProfileDropdown } from "@/components/home/ProfileDropdown";
 
 type Props = {
   loading: boolean;
@@ -32,6 +33,9 @@ type Props = {
   onMarkNotifRead: (id: string) => void | Promise<void>;
   onMarkAllNotifRead: () => void | Promise<void>;
   onDeleteNotif: (id: string) => void | Promise<void>;
+
+  onEditProfile: () => void;
+  onMyItems: () => void;
 };
 
 export function Header({
@@ -46,6 +50,8 @@ export function Header({
   onMarkNotifRead,
   onMarkAllNotifRead,
   onDeleteNotif,
+  onEditProfile,
+  onMyItems
 }: Props) {
   return (
     <header className="bg-white border-b">
@@ -65,6 +71,13 @@ export function Header({
             ) : (
               user && (
                 <>
+                  <ProfileDropdown
+                    userName={user?.name}
+                    userEmail={user?.email}
+                    onEditProfile={onEditProfile}
+                    onMyItems={onMyItems}
+                  />
+
                   <NotificationsPanel
                     notifications={notifications}
                     onNotificationClick={onNotificationClick}
