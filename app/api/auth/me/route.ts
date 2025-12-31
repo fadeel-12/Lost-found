@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getCurrentUser } from "@/lib/getCurrentUser";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,4 +49,32 @@ export async function GET(req: NextRequest) {
     console.error("me error:", err);
     return NextResponse.json({ user: null }, { status: 200 });
   }
+}
+
+export async function PATCH(req: Request) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const body = await req.json().catch(() => null);
+  const name = String(body?.name ?? "").trim();
+  const phone = String(body?.phone ?? "").trim();
+  const studentId = String(body?.studentId ?? "").trim();
+
+  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (!phone) return NextResponse.json({ error: "Phone is required" }, { status: 400 });
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      name,
+      phone,
+      student_id: studentId || null,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
