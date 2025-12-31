@@ -29,8 +29,10 @@ export async function GET() {
         user_id,
         category:categories ( name ),
         location:locations ( name ),
-        user:users ( name, email, phone )
+        user:users ( name, email, phone ),
+        status
       `)
+      .eq("status", "open")
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -41,7 +43,7 @@ export async function GET() {
       id: i.id,
       title: i.title,
       category: i.category?.name ?? '',
-      status: i.type,
+      type: i.type,
       location: i.location?.name ?? '',
       date: formatDate(i.date),
       imageUrl: i.imageUrl,
@@ -49,7 +51,8 @@ export async function GET() {
       contactName: i.user?.name ?? '',
       contactEmail: i.user?.email ?? '',
       contactPhone: i.user?.phone ?? '',
-      user_id: i.user_id
+      user_id: i.user_id,
+      status: i.status
     }));
 
     return NextResponse.json(items, { status: 200 });
