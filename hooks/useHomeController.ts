@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { LOCATIONS } from "@/components/home/SearchBar";
 import type { AppNotification } from "@/components/home/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +10,7 @@ import { useItemFilters } from "@/hooks/useItemFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useRequireAuthAction } from "@/hooks/useRequireAuthAction";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useProfile } from "@/hooks/useProfile";
 
 type Tab = "all" | "lost" | "found";
 type ReportType = "lost" | "found";
@@ -16,6 +18,7 @@ type ReportType = "lost" | "found";
 export function useHomeController() {
   const { user, loading, setUser, logout } = useAuth();
   const { items, loadingItems, reload } = useItems();
+  const profile = useProfile(user?.id ?? null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("all");
@@ -56,7 +59,8 @@ export function useHomeController() {
   const [pendingChatItemId, setPendingChatItemId] = useState<string | null>(null);
   const [pendingOpenMessagesAfterLogin, setPendingOpenMessagesAfterLogin] = useState(false);
   const [pendingOpenReportAfterLogin, setPendingOpenReportAfterLogin] = useState(false);
-
+  const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false);
+  const [myItemsDialogOpen, setMyItemsDialogOpen] = useState(false);
   const {
     notifications,
     markAsRead,
@@ -143,6 +147,44 @@ export function useHomeController() {
   };
 
 
+  const updateItemStatus = async (
+    itemId: string,
+    status: "deleted" | "recovered"
+  ) => {
+    const res = await fetch("/api/auth/me/items", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        itemId,
+        status,
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to update status");
+    }
+
+    return res.json();
+  }
+
+  const handleRecover = async (itemId: string) => {
+    await updateItemStatus(itemId, "recovered");
+    toast.success("Item marked as recovered");
+
+    await profile.fetchMyItems();
+    await reload();
+  };
+
+  const handleDelete = async (itemId: string) => {
+    await updateItemStatus(itemId, "deleted");
+    toast.success("Item marked as deleted");
+    await profile.fetchMyItems();
+    await reload();
+  };
+
   return {
     auth: {
       user,
@@ -205,6 +247,8 @@ export function useHomeController() {
       openReport,
       openDetails,
       onReportSuccess,
+      handleRecover,
+      handleDelete,
     },
 
     notifications: {
@@ -213,6 +257,19 @@ export function useHomeController() {
       markAllAsRead,
       deleteNotification,
       onNotificationClick,
+    },
+
+    profile: {
+      profile: profile.profile,
+      fetchProfile: profile.fetchProfile,
+      updateProfile: profile.updateProfile,
+      fetchMyItems: profile.fetchMyItems,
+      lostItems: profile.lostItems,
+      foundItems: profile.foundItems,
+      editProfileDialogOpen,
+      setEditProfileDialogOpen,
+      myItemsDialogOpen,
+      setMyItemsDialogOpen,
     },
   };
 }
