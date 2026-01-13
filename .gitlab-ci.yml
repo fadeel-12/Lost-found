@@ -7,31 +7,48 @@ image: node:20
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
-    - node_modules/
     - .npm/
 
 variables:
   NPM_CONFIG_CACHE: ".npm"
 
-before_script:
-  - npm ci
+# Optional: prevents "double pipelines" (branch pipeline + MR pipeline for same commit)
+workflow:
+  rules:
+    # Always run for merge requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Always run for any branch push
+    - if: $CI_PIPELINE_SOURCE == "push"
+    # Otherwise don't run
+    - when: never
 
-# Lint + Build (Merge Requests + master branch)
+before_script:
+  # Works even if you don't have package-lock.json
+  # React 19 peer deps need legacy flag
+  - npm install --legacy-peer-deps
+
+# -----------------------------------
+# Lint + Build (RUNS ON EVERY PUSH)
+# -----------------------------------
 test_build:
   stage: test
   script:
     - npm run lint
     - npm run build
   rules:
+    # Run on every branch push and MR
+    - if: $CI_PIPELINE_SOURCE == "push"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "master"
 
-# Preview Deploy (Only Merge Requests)
+# -----------------------------------
+# Preview Deploy (ONLY Merge Requests)
+# -----------------------------------
 vercel_preview:
   stage: deploy
   script:
     - npm i -g vercel
 
+    # Link Vercel project (no committed .vercel folder needed)
     - mkdir -p .vercel
     - |
       cat > .vercel/project.json <<EOF
@@ -53,7 +70,9 @@ vercel_preview:
   environment:
     name: preview/$CI_MERGE_REQUEST_IID
 
-# Production Deploy (Only master branch)
+# -----------------------------------
+# Production Deploy (ONLY master branch)
+# -----------------------------------
 vercel_production:
   stage: deploy
   script:
