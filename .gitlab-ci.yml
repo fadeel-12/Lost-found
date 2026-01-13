@@ -39,6 +39,7 @@ before_script:
 test_build:
   stage: test
   script:
+    - npm run lint
     - npm run build
   rules:
     # Run on every branch push and Merge Request
