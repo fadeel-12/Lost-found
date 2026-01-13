@@ -1,0 +1,81 @@
+stages:
+  - test
+  - deploy
+
+image: node:20
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .npm/
+
+variables:
+  NPM_CONFIG_CACHE: ".npm"
+
+before_script:
+  - npm ci
+
+# Lint + Build (Merge Requests + master branch)
+test_build:
+  stage: test
+  script:
+    - npm run lint
+    - npm run build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master"
+
+# Preview Deploy (Only Merge Requests)
+vercel_preview:
+  stage: deploy
+  script:
+    - npm i -g vercel
+
+    - mkdir -p .vercel
+    - |
+      cat > .vercel/project.json <<EOF
+      {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID"}
+      EOF
+
+    - vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+    - vercel build --token=$VERCEL_TOKEN
+    - vercel deploy --prebuilt --token=$VERCEL_TOKEN > vercel_preview_url.txt
+
+    - echo "Preview Deployment URL:"
+    - cat vercel_preview_url.txt
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  artifacts:
+    paths:
+      - vercel_preview_url.txt
+    expire_in: 1 week
+  environment:
+    name: preview/$CI_MERGE_REQUEST_IID
+
+# Production Deploy (Only master branch)
+vercel_production:
+  stage: deploy
+  script:
+    - npm i -g vercel
+
+    - mkdir -p .vercel
+    - |
+      cat > .vercel/project.json <<EOF
+      {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID"}
+      EOF
+
+    - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+    - vercel build --prod --token=$VERCEL_TOKEN
+    - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN > vercel_prod_url.txt
+
+    - echo "Production Deployment URL:"
+    - cat vercel_prod_url.txt
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  artifacts:
+    paths:
+      - vercel_prod_url.txt
+    expire_in: 1 month
+  environment:
+    name: production
