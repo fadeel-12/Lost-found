@@ -5,17 +5,15 @@ import {
   type AppNotification,
 } from "@/components/home/NotificationsPanel";
 
-jest.mock("@/components/ui/dropdown-menu", () => {
-  const React = require("react");
-
-  return {
-    DropdownMenu: ({ children }: any) => <div>{children}</div>,
-    DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
-    DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  };
-});
+jest.mock("@/components/ui/dropdown-menu", () => ({
+  __esModule: true,
+  DropdownMenu: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
+}));
 
 jest.mock("@/components/ui/scroll-area", () => ({
+  __esModule: true,
   ScrollArea: ({ children }: any) => <div>{children}</div>,
 }));
 
