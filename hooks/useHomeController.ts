@@ -224,6 +224,7 @@ export function useHomeController() {
     },
 
     dialogs: {
+      items,
       selectedItem,
       setSelectedItem,
       detailsDialogOpen,

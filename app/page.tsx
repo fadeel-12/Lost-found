@@ -111,6 +111,7 @@ function HomeContent() {
       />
 
       <Dialogs
+        items={c.dialogs.items}
         user={c.auth.user}
         setUser={c.auth.setUser}
         requireAuth={c.auth.requireAuth}

@@ -11,6 +11,7 @@ import { EditProfileDialog } from "@/components/dialogs/EditProfileDialog";
 import { MyItemsDialog } from "@/components/dialogs/MyItemsDialog";
 
 type Props = {
+  items: any[];
   user: any;
   setUser: (u: any) => void;
   requireAuth: (fn: () => void | Promise<void>) => void;
@@ -58,6 +59,7 @@ type Props = {
 };
 
 export function Dialogs({
+  items: allItems,
   user,
   setUser,
   requireAuth,
@@ -167,6 +169,7 @@ export function Dialogs({
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
         item={selectedItem}
+        allItems={allItems}
         onContactOwner={() => {
           const itemId = selectedItem?.id ?? null;
           if (!itemId) return;
@@ -196,6 +199,11 @@ export function Dialogs({
           openMessages(itemId);
         }}
         currentUserId={user?.id ?? null}
+        onItemClick={(item) => {
+          setDetailsDialogOpen(false);
+          setSelectedItem(item);
+          setDetailsDialogOpen(true);
+        }}
       />
 
       <ItemMessagesDialog

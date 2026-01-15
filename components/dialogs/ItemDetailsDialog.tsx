@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   Calendar,
   MapPin,
@@ -21,6 +22,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { Separator } from "@/components/ui/separator";
+import { PotentialMatchesSection, PotentialMatch } from "@/components/PotentialMatchesSection";
+import { findPotentialMatches, Item as MatchItem } from "@/lib/potentialMatchesUtils";
+
+export interface LostifyItem {
+  id: string;
+  title: string;
+  category: string;
+  type: "lost" | "found";
+  location: string;
+  date: string;
+  imageUrl: string | null;
+  description: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  user_id?: string;
+  status?: "open" | "recovered" | "deleted";
+}
 
 interface ItemDetailsDialogProps {
   open: boolean;
@@ -28,23 +47,11 @@ interface ItemDetailsDialogProps {
   onContactOwner: () => void;
   onMarkRecovered: () => void;
   onDeleteItem: () => void;
-  item: {
-    id: string;
-    title: string;
-    category: string;
-    type: 'lost' | 'found';
-    location: string;
-    date: string;
-    imageUrl: string;
-    description: string;
-    contactName?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    user_id?: string;
-    status?: "open" | "recovered" | "deleted";
-  } | null;
+  item: LostifyItem | null;
   currentUserId: string | null;
   onOpenItemMessages: (itemId: string) => void;
+  allItems?: LostifyItem[];
+  onItemClick: (item: LostifyItem) => void;
 }
 
 export function ItemDetailsDialog({
@@ -56,10 +63,52 @@ export function ItemDetailsDialog({
   onMarkRecovered,
   onDeleteItem,
   onOpenItemMessages,
+  allItems = [],
+  onItemClick
 }: ItemDetailsDialogProps) {
-  if (!item) return null;
+  const isOwner = !!currentUserId && !!item && item.user_id === currentUserId;
 
-  const isOwner = !!currentUserId && item.user_id === currentUserId;
+  const potentialMatches = useMemo(() => {
+    if (!item) return [];
+    if (item.type !== "found") return [];
+    if (allItems.length === 0) return [];
+
+    const foundItem: MatchItem = {
+      ...item,
+      imageUrl: item.imageUrl ?? null,
+      contactName: item.contactName ?? "",
+      contactEmail: item.contactEmail ?? "",
+    };
+
+    const pool: MatchItem[] = allItems.map((it) => ({
+      ...it,
+      imageUrl: it.imageUrl ?? null,
+      contactName: it.contactName ?? "",
+      contactEmail: it.contactEmail ?? "",
+    }));
+
+    return findPotentialMatches(foundItem, pool);
+  }, [item, allItems]);
+
+  const handleMatchClick = (clicked: PotentialMatch) => {
+    const normalized: LostifyItem = {
+      id: clicked.id,
+      title: clicked.title,
+      category: clicked.category,
+      type: clicked.type,
+      location: clicked.location,
+      date: clicked.date,
+      imageUrl: clicked.imageUrl ?? null,
+      description: clicked.description,
+      contactName: clicked.contactName,
+      contactEmail: clicked.contactEmail,
+      contactPhone: clicked.contactPhone,
+    };
+
+    onItemClick?.(normalized);
+  };
+
+  if (!item) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,7 +128,7 @@ export function ItemDetailsDialog({
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
             <ImageWithFallback
-              src={item.imageUrl}
+              src={item.imageUrl ?? ""}
               alt={item.title}
               className="w-full h-full object-cover"
             />
@@ -200,6 +249,9 @@ export function ItemDetailsDialog({
               </>
             )}
           </div>
+          {item.type === "found" && (
+            <PotentialMatchesSection matches={potentialMatches as any} onItemClick={handleMatchClick} />
+          )}
         </div>
       </DialogContent>
     </Dialog>
