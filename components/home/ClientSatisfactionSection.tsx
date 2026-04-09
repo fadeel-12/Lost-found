@@ -77,7 +77,7 @@ export function ClientSatisfactionSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-10 sm:mb-14">
           {[
             { value: STAT_VALUES[0], label: t.satisfaction.recoveryRate },
             { value: STAT_VALUES[1], label: t.satisfaction.itemsRecovered },
@@ -85,7 +85,7 @@ export function ClientSatisfactionSection() {
             { value: STAT_VALUES[3], label: t.satisfaction.avgResponse },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="text-3xl font-bold text-blue-600 mb-1">{stat.value}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1">{stat.value}</p>
               <p className="text-sm text-gray-500">{stat.label}</p>
             </div>
           ))}

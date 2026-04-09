@@ -216,14 +216,14 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* ── Welcome banner ── */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-6 text-white shadow-md">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <p className="text-blue-100 text-sm font-medium mb-1">Welcome back</p>
-              <h2 className="text-2xl font-bold">{user.name || user.email}</h2>
+              <h2 className="text-lg sm:text-2xl font-bold">{user.name || user.email}</h2>
               <p className="text-blue-100 text-sm mt-1">{user.email}</p>
             </div>
             <div className="flex gap-4 flex-wrap">
@@ -244,7 +244,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Stats cards ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             icon={<Search className="h-5 w-5 text-red-600" />}
             label="Lost Items"
@@ -276,7 +276,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Second stats row ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             icon={<PawPrint className="h-5 w-5 text-orange-600" />}
             label="Pet Reports"
@@ -349,9 +349,9 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50 max-h-[540px] overflow-y-auto">
+              <div className="divide-y divide-gray-50 max-h-[50vh] overflow-y-auto">
                 {filteredItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                  <div key={item.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 hover:bg-gray-50 transition-colors">
                     {/* Thumbnail */}
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       {item.imageUrl ? (
@@ -579,7 +579,7 @@ export default function DashboardPage() {
             <Layers className="h-5 w-5 text-blue-500" />
             Items Overview
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {[
               { label: "Open Lost",      count: stats.lostOpen,  total: stats.totalItems, color: "bg-red-400" },
               { label: "Open Found",     count: stats.foundOpen, total: stats.totalItems, color: "bg-blue-400" },

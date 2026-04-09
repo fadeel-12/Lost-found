@@ -135,9 +135,9 @@ export function SearchBar({
 
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 shrink-0">
+              <Button variant="outline" size="sm" className="gap-1.5 shrink-0 px-2 sm:px-3">
                 <SlidersHorizontal className="h-4 w-4" />
-                Filters
+                <span className="hidden sm:inline">Filters</span>
                 {hasActiveFilters && (
                   <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white rounded-full text-xs">
                     {

@@ -50,7 +50,6 @@ type Props = {
 export function Header({
   loading,
   user,
-  onLogout,
   onSignIn,
   onReport,
   search,
@@ -68,21 +67,21 @@ export function Header({
 
   return (
     <header className="bg-white border-b">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/" className="flex items-center gap-2">
-            <h1 className="text-blue-600 text-xl font-semibold">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-8 gap-2">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <h1 className="text-blue-600 text-base sm:text-xl font-semibold">
               {t.header.title}
             </h1>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Language switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="gap-1 px-2 sm:px-3">
                   <Globe className="h-4 w-4" />
-                  {currentLocaleLabel}
+                  <span className="hidden sm:inline">{currentLocaleLabel}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -99,8 +98,10 @@ export function Header({
             </DropdownMenu>
 
             {!loading && !user ? (
-              <Button variant="outline" className="gap-2" onClick={onSignIn}>
-                <LogIn className="h-5 w-5" /> {t.header.signIn}
+              <Button variant="outline" size="sm" className="gap-1.5 px-2 sm:px-4" onClick={onSignIn}>
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.header.signIn}</span>
+                <span className="sm:hidden">Sign In</span>
               </Button>
             ) : (
               user && (
@@ -120,15 +121,14 @@ export function Header({
                     onMarkAllAsRead={onMarkAllNotifRead}
                     onDeleteNotification={onDeleteNotif}
                   />
-                  <Button variant="outline" className="gap-2" onClick={onLogout}>
-                    {t.header.logout}
-                  </Button>
                 </>
               )
             )}
 
-            <Button className="gap-2" onClick={onReport}>
-              <PlusCircle className="h-5 w-5" /> {t.header.reportItem}
+            <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={onReport}>
+              <PlusCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">{t.header.reportItem}</span>
+              <span className="sm:hidden">Report</span>
             </Button>
           </div>
         </div>

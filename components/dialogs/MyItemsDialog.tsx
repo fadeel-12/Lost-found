@@ -52,15 +52,15 @@ export function MyItemsDialog({
         <Badge className="absolute top-2 right-2 bg-red-600">Deleted</Badge>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
             alt={item.title}
-            className="w-24 h-24 object-cover rounded-md flex-shrink-0"
+            className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md flex-shrink-0"
           />
         ) : (
-          <div className="w-24 h-24 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
             No Image
           </div>
         )}
@@ -95,7 +95,7 @@ export function MyItemsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>My Items</DialogTitle>
           <DialogDescription>View your reported lost and found items</DialogDescription>

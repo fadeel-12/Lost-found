@@ -120,7 +120,7 @@ export function NotificationsPanel({
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-96 p-0">
+            <DropdownMenuContent align="end" className="w-[min(384px,calc(100vw-1rem))] p-0">
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm">Notifications</h3>
@@ -143,7 +143,7 @@ export function NotificationsPanel({
                     )}
                 </div>
 
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[min(400px,60vh)]">
                     {notifications.length === 0 ? (
                         <div className="p-8 text-center text-sm text-gray-500">
                             No notifications
@@ -196,7 +196,7 @@ export function NotificationsPanel({
                                             e.stopPropagation();
                                             onDeleteNotification(n.id);
                                         }}
-                                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                                         type="button"
                                     >
                                         <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />

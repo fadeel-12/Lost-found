@@ -115,7 +115,7 @@ export function ItemDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="pr-8">{item.title}</DialogTitle>
@@ -142,7 +142,7 @@ export function ItemDetailsDialog({
               <h3 className="font-semibold text-orange-700 flex items-center gap-2">
                 🐾 Pet Details
               </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 text-sm">
                 {item.pet_name && (
                   <div><p className="text-gray-500">Name</p><p className="font-medium">{item.pet_name}</p></div>
                 )}

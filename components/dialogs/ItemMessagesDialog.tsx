@@ -141,7 +141,7 @@ export function ItemMessagesDialog({
         onOpenChange(isOpen);
       }}
     >
-      <DialogContent className="sm:max-w-4xl lg:max-w-5xl h-[80vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] flex flex-col">
         <DialogHeader className="border-b pb-3 mb-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">

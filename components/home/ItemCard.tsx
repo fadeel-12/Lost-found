@@ -28,7 +28,7 @@ export function ItemCard({ title, category, type, location, date, imageUrl, desc
         <button
           aria-label="Remove item"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+          className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
           <Trash2 className="h-4 w-4" />
         </button>

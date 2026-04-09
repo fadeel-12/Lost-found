@@ -59,7 +59,7 @@ export function ItemsSection({
   return (
     <main className="container mx-auto px-4 py-8">
       <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as Tab)} className="mb-8">
-        <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4">
+        <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4 text-xs sm:text-sm">
           <TabsTrigger value="all">{t.items.allItems}</TabsTrigger>
           <TabsTrigger value="lost">{t.items.lostItems}</TabsTrigger>
           <TabsTrigger value="found">{t.items.foundItems}</TabsTrigger>
