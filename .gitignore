@@ -42,9 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 package-lock.json
-# PWA generated files
-public/sw.js
-public/sw.js.map
+# PWA auto-generated files (workbox only — sw.js is hand-written, keep it tracked)
 public/workbox-*.js
 public/workbox-*.js.map
 public/worker-*.js
