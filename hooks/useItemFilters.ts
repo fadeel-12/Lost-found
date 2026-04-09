@@ -3,7 +3,7 @@ import { matchesDateRange, DateRange } from "@/lib/dateRange";
 
 export type Filters = {
   searchQuery: string;
-  activeTab: "all" | "lost" | "found";
+  activeTab: "all" | "lost" | "found" | "pets";
   selectedCategory: string;
   selectedLocation: string;
   selectedDateRange: DateRange;
@@ -21,7 +21,9 @@ export function useItemFilters(items: any[], f: Filters) {
         item.description?.toLowerCase().includes(q) ||
         item.category?.toLowerCase().includes(q);
 
-      const matchesTab = f.activeTab === "all" || item.type === f.activeTab;
+      const matchesTab =
+        f.activeTab === "all" ||
+        (f.activeTab === "pets" ? item.is_pet === true : item.type === f.activeTab && !item.is_pet);
 
       const matchesCategory =
         f.selectedCategory === "all" ||

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { SuccessDialog } from "@/components/dialogs/SuccessDialog";
 import { ReportItemDialog } from "@/components/dialogs/ReportItemDialog";
 import { ItemDetailsDialog } from "@/components/dialogs/ItemDetailsDialog";
@@ -38,8 +37,6 @@ type Props = {
   itemMessagesItemId: string | null;
   setItemMessagesItemId: (v: string | null) => void;
 
-  requestOpenMessagesForItem: (itemId: string | null) => void;
-
   consumePendingMessagesIntent: () => { shouldOpen: boolean; itemId: string | null };
   consumePendingReportIntent: () => { shouldOpen: boolean };
 
@@ -59,7 +56,7 @@ type Props = {
 };
 
 export function Dialogs({
-  items: allItems,
+  items: _items,
   user,
   setUser,
   requireAuth,
@@ -79,7 +76,6 @@ export function Dialogs({
   setItemMessagesDialogOpen,
   itemMessagesItemId,
   setItemMessagesItemId,
-  requestOpenMessagesForItem,
   consumePendingMessagesIntent,
   consumePendingReportIntent,
   initialChatId,
@@ -169,7 +165,6 @@ export function Dialogs({
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
         item={selectedItem}
-        allItems={allItems}
         onContactOwner={() => {
           const itemId = selectedItem?.id ?? null;
           if (!itemId) return;
@@ -199,6 +194,7 @@ export function Dialogs({
           openMessages(itemId);
         }}
         currentUserId={user?.id ?? null}
+        currentUser={user ? { name: user.name, email: user.email, phone: user.phone } : null}
         onItemClick={(item) => {
           setDetailsDialogOpen(false);
           setSelectedItem(item);

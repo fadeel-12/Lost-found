@@ -29,6 +29,7 @@ describe("<Dialogs />", () => {
   it("renders dialog shells based on open flags", () => {
     render(
       <Dialogs
+        items={[]}
         user={null}
         setUser={jest.fn()}
         requireAuth={jest.fn()}
@@ -50,7 +51,6 @@ describe("<Dialogs />", () => {
         setItemMessagesDialogOpen={jest.fn()}
         itemMessagesItemId={null}
         setItemMessagesItemId={jest.fn()}
-        requestOpenMessagesForItem={jest.fn()}
         consumePendingMessagesIntent={() => ({ shouldOpen: false, itemId: null })}
         consumePendingReportIntent={() => ({ shouldOpen: false })}
         editProfileOpen={false}

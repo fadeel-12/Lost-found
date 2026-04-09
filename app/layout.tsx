@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from 'sonner';
+import { TranslationProvider } from "@/contexts/TranslationContext";
 
 export const metadata: Metadata = {
   title: "Lostify - University Lost and Found",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
-        <Toaster richColors position="top-center" />
+        <TranslationProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </TranslationProvider>
       </body>
     </html>
   );

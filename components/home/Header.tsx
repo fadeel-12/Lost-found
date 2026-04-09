@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogIn, PlusCircle } from "lucide-react";
+import { LogIn, PlusCircle, Globe } from "lucide-react";
 import { SearchBar } from "@/components/home/SearchBar";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,14 @@ import {
   type AppNotification,
 } from "@/components/home/NotificationsPanel";
 import { ProfileDropdown } from "@/components/home/ProfileDropdown";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { LOCALES } from "@/lib/i18n";
 
 type Props = {
   loading: boolean;
@@ -36,6 +44,7 @@ type Props = {
 
   onEditProfile: () => void;
   onMyItems: () => void;
+  onMyQRTags: () => void;
 };
 
 export function Header({
@@ -51,22 +60,47 @@ export function Header({
   onMarkAllNotifRead,
   onDeleteNotif,
   onEditProfile,
-  onMyItems
+  onMyItems,
+  onMyQRTags,
 }: Props) {
+  const { t, locale, setLocale } = useTranslation();
+  const currentLocaleLabel = LOCALES.find((l) => l.value === locale)?.label ?? "EN";
+
   return (
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-8">
           <Link href="/" className="flex items-center gap-2">
             <h1 className="text-blue-600 text-xl font-semibold">
-              UIBK Lost and Found
+              {t.header.title}
             </h1>
           </Link>
 
           <div className="flex items-center gap-3">
+            {/* Language switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Globe className="h-4 w-4" />
+                  {currentLocaleLabel}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {LOCALES.map((loc) => (
+                  <DropdownMenuItem
+                    key={loc.value}
+                    onClick={() => setLocale(loc.value)}
+                    className={locale === loc.value ? "font-semibold text-blue-600" : ""}
+                  >
+                    {loc.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {!loading && !user ? (
               <Button variant="outline" className="gap-2" onClick={onSignIn}>
-                <LogIn className="h-5 w-5" /> Sign In
+                <LogIn className="h-5 w-5" /> {t.header.signIn}
               </Button>
             ) : (
               user && (
@@ -76,6 +110,7 @@ export function Header({
                     userEmail={user?.email}
                     onEditProfile={onEditProfile}
                     onMyItems={onMyItems}
+                    onMyQRTags={onMyQRTags}
                   />
 
                   <NotificationsPanel
@@ -86,14 +121,14 @@ export function Header({
                     onDeleteNotification={onDeleteNotif}
                   />
                   <Button variant="outline" className="gap-2" onClick={onLogout}>
-                    Logout
+                    {t.header.logout}
                   </Button>
                 </>
               )
             )}
 
             <Button className="gap-2" onClick={onReport}>
-              <PlusCircle className="h-5 w-5" /> Report Item
+              <PlusCircle className="h-5 w-5" /> {t.header.reportItem}
             </Button>
           </div>
         </div>

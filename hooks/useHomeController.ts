@@ -12,12 +12,12 @@ import { useRequireAuthAction } from "@/hooks/useRequireAuthAction";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
 
-type Tab = "all" | "lost" | "found";
+type Tab = "all" | "lost" | "found" | "pets";
 type ReportType = "lost" | "found";
 
 export function useHomeController() {
   const { user, loading, setUser, logout } = useAuth();
-  const { items, loadingItems, reload } = useItems();
+  const { items, loadingItems, reload, removeItem } = useItems();
   const profile = useProfile(user?.id ?? null);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +61,9 @@ export function useHomeController() {
   const [pendingOpenReportAfterLogin, setPendingOpenReportAfterLogin] = useState(false);
   const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false);
   const [myItemsDialogOpen, setMyItemsDialogOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewItemId, setReviewItemId] = useState<string | null>(null);
+  const [qrTagsOpen, setQrTagsOpen] = useState(false);
   const {
     notifications,
     markAsRead,
@@ -76,14 +79,7 @@ export function useHomeController() {
 
   const openReport = () => {
     setDetailsDialogOpen(false);
-
-    if (!user && !loading) {
-      setPendingOpenReportAfterLogin(true);
-      setSignInOpen(true);
-      return;
-    }
-
-    requireAuth(() => setReportOpen(true));
+    setReportOpen(true);
   };
 
   const openDetails = (item: any) => {
@@ -176,6 +172,9 @@ export function useHomeController() {
 
     await profile.fetchMyItems();
     await reload();
+
+    setReviewItemId(itemId);
+    setReviewOpen(true);
   };
 
   const handleDelete = async (itemId: string) => {
@@ -201,6 +200,7 @@ export function useHomeController() {
       filteredItems,
       currentItems,
       reload,
+      removeItem,
     },
 
     filters: {
@@ -260,6 +260,12 @@ export function useHomeController() {
       onNotificationClick,
     },
 
+    review: {
+      reviewOpen,
+      setReviewOpen,
+      reviewItemId,
+    },
+
     profile: {
       profile: profile.profile,
       fetchProfile: profile.fetchProfile,
@@ -271,6 +277,8 @@ export function useHomeController() {
       setEditProfileDialogOpen,
       myItemsDialogOpen,
       setMyItemsDialogOpen,
+      qrTagsOpen,
+      setQrTagsOpen,
     },
   };
 }

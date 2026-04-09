@@ -9,7 +9,7 @@ export function useItems() {
     try {
       const res = await fetch("/api/items");
       const data = await res.json();
-      setItems(data);
+      setItems(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Failed to load items:", e);
     } finally {
@@ -19,5 +19,9 @@ export function useItems() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  return { items, loadingItems, reload };
+  const removeItem = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  return { items, loadingItems, reload, removeItem };
 }

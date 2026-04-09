@@ -16,6 +16,7 @@ type UseChatMessagesArgs = {
 export type UIMessage = {
   id: string;
   text: string;
+  imageUrl: string | null;
   createdAt: string;
   isOwn: boolean;
   is_read: boolean;
@@ -40,7 +41,7 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) 
 
     const { data, error } = await supabase
       .from("messages")
-      .select("id, sender_id, message, is_read, created_at")
+      .select("id, sender_id, message, image_url, is_read, created_at")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: true });
 
@@ -53,7 +54,8 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) 
     const mapped: UIMessage[] =
       data?.map((row) => ({
         id: row.id,
-        text: row.message,
+        text: row.message ?? "",
+        imageUrl: row.image_url ?? null,
         createdAt: row.created_at,
         is_read: !!row.is_read,
         isOwn: currentUserId ? row.sender_id === currentUserId : false,
@@ -63,24 +65,36 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) 
     setLoading(false);
   }, [chatId, currentUserId]);
 
+  // Send message via API (supports text + optional image file)
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, imageFile?: File | null) => {
       if (!canUse) return;
+      if (!text.trim() && !imageFile) return;
 
       setSending(true);
       setError(null);
 
-      const { error } = await supabase.from("messages").insert({
-        chat_id: chatId,
-        sender_id: currentUserId,
-        message: text,
-        is_read: false,
-      });
+      try {
+        const body = new FormData();
+        if (text.trim()) body.append("text", text.trim());
+        if (imageFile) body.append("image", imageFile);
 
-      if (error) setError(error.message);
-      setSending(false);
+        const res = await fetch(`/api/chats/${chatId}/messages`, {
+          method: "POST",
+          body,
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Failed to send message");
+        }
+      } catch (err: any) {
+        setError(err.message ?? "Network error");
+      } finally {
+        setSending(false);
+      }
     },
-    [canUse, chatId, currentUserId]
+    [canUse, chatId]
   );
 
   const markChatAsRead = useCallback(async () => {
@@ -120,9 +134,7 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) 
           table: "messages",
           filter: `chat_id=eq.${chatId}`,
         },
-        () => {
-          fetchMessages();
-        }
+        () => fetchMessages()
       )
       .subscribe();
 
@@ -131,12 +143,5 @@ export function useChatMessages({ chatId, currentUserId }: UseChatMessagesArgs) 
     };
   }, [chatId, fetchMessages]);
 
-  return {
-    messages,
-    loading,
-    sending,
-    error,
-    sendMessage,
-    markChatAsRead,
-  };
+  return { messages, loading, sending, error, sendMessage, markChatAsRead };
 }

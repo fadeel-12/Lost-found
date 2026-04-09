@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   MapPin,
@@ -10,6 +10,7 @@ import {
   MessageCircle,
   CheckCircle,
   Trash2,
+  Plane,
 } from "lucide-react";
 import {
   Dialog,
@@ -23,7 +24,8 @@ import { Button } from "@/components/ui/button";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { Separator } from "@/components/ui/separator";
 import { PotentialMatchesSection, PotentialMatch } from "@/components/PotentialMatchesSection";
-import { findPotentialMatches, Item as MatchItem } from "@/lib/potentialMatchesUtils";
+import { ShippingRequestDialog } from "@/components/dialogs/ShippingRequestDialog";
+import { ShippingRequestsPanel } from "@/components/ShippingRequestsPanel";
 
 export interface LostifyItem {
   id: string;
@@ -39,6 +41,12 @@ export interface LostifyItem {
   contactPhone?: string;
   user_id?: string;
   status?: "open" | "recovered" | "deleted";
+  is_pet?: boolean;
+  pet_name?: string | null;
+  species?: string | null;
+  breed?: string | null;
+  pet_color?: string | null;
+  microchip?: string | null;
 }
 
 interface ItemDetailsDialogProps {
@@ -49,8 +57,8 @@ interface ItemDetailsDialogProps {
   onDeleteItem: () => void;
   item: LostifyItem | null;
   currentUserId: string | null;
+  currentUser?: { name: string | null; email: string; phone: string | null } | null;
   onOpenItemMessages: (itemId: string) => void;
-  allItems?: LostifyItem[];
   onItemClick: (item: LostifyItem) => void;
 }
 
@@ -59,36 +67,32 @@ export function ItemDetailsDialog({
   onOpenChange,
   item,
   currentUserId,
+  currentUser,
   onContactOwner,
   onMarkRecovered,
   onDeleteItem,
   onOpenItemMessages,
-  allItems = [],
-  onItemClick
+  onItemClick,
 }: ItemDetailsDialogProps) {
   const isOwner = !!currentUserId && !!item && item.user_id === currentUserId;
 
-  const potentialMatches = useMemo(() => {
-    if (!item) return [];
-    if (item.type !== "found") return [];
-    if (allItems.length === 0) return [];
+  const [potentialMatches, setPotentialMatches] = useState<PotentialMatch[]>([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
 
-    const foundItem: MatchItem = {
-      ...item,
-      imageUrl: item.imageUrl ?? null,
-      contactName: item.contactName ?? "",
-      contactEmail: item.contactEmail ?? "",
-    };
+  useEffect(() => {
+    if (!open || !item?.id) {
+      setPotentialMatches([]);
+      return;
+    }
 
-    const pool: MatchItem[] = allItems.map((it) => ({
-      ...it,
-      imageUrl: it.imageUrl ?? null,
-      contactName: it.contactName ?? "",
-      contactEmail: it.contactEmail ?? "",
-    }));
-
-    return findPotentialMatches(foundItem, pool);
-  }, [item, allItems]);
+    setLoadingMatches(true);
+    fetch(`/api/items/${item.id}/matches`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setPotentialMatches(Array.isArray(data) ? data : []))
+      .catch(() => setPotentialMatches([]))
+      .finally(() => setLoadingMatches(false));
+  }, [open, item?.id]);
 
   const handleMatchClick = (clicked: PotentialMatch) => {
     const normalized: LostifyItem = {
@@ -104,7 +108,6 @@ export function ItemDetailsDialog({
       contactEmail: clicked.contactEmail,
       contactPhone: clicked.contactPhone,
     };
-
     onItemClick?.(normalized);
   };
 
@@ -133,6 +136,31 @@ export function ItemDetailsDialog({
               className="w-full h-full object-cover"
             />
           </div>
+
+          {item.is_pet && (
+            <div className="space-y-3 bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h3 className="font-semibold text-orange-700 flex items-center gap-2">
+                🐾 Pet Details
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {item.pet_name && (
+                  <div><p className="text-gray-500">Name</p><p className="font-medium">{item.pet_name}</p></div>
+                )}
+                {item.species && (
+                  <div><p className="text-gray-500">Species</p><p className="font-medium">{item.species}</p></div>
+                )}
+                {item.breed && (
+                  <div><p className="text-gray-500">Breed</p><p className="font-medium">{item.breed}</p></div>
+                )}
+                {item.pet_color && (
+                  <div><p className="text-gray-500">Color / Markings</p><p className="font-medium">{item.pet_color}</p></div>
+                )}
+                {item.microchip && (
+                  <div className="col-span-2"><p className="text-gray-500">Microchip</p><p className="font-medium font-mono">{item.microchip}</p></div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -211,7 +239,17 @@ export function ItemDetailsDialog({
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 flex-wrap">
+            {!isOwner && item.type === "found" && (
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                onClick={() => setShippingOpen(true)}
+              >
+                <Plane className="h-4 w-4" />
+                Request Shipping
+              </Button>
+            )}
             {!isOwner && (
               <Button className="flex-1 gap-2" onClick={onContactOwner}>
                 <MessageCircle className="h-4 w-4" />
@@ -249,11 +287,34 @@ export function ItemDetailsDialog({
               </>
             )}
           </div>
-          {item.type === "found" && (
-            <PotentialMatchesSection matches={potentialMatches as any} onItemClick={handleMatchClick} />
+          {/* Finder: shipping requests panel */}
+          {isOwner && item.type === "found" && (
+            <ShippingRequestsPanel itemId={item.id} />
+          )}
+
+          {loadingMatches ? (
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center py-6 text-sm text-gray-400">
+              Searching for potential matches…
+            </div>
+          ) : (
+            <PotentialMatchesSection
+              matches={potentialMatches}
+              onItemClick={handleMatchClick}
+            />
           )}
         </div>
       </DialogContent>
+
+      {/* Shipping request form — shown to non-owners of found items */}
+      <ShippingRequestDialog
+        open={shippingOpen}
+        onOpenChange={setShippingOpen}
+        itemId={item.id}
+        itemTitle={item.title}
+        prefillName={currentUser?.name ?? ""}
+        prefillEmail={currentUser?.email ?? ""}
+        prefillPhone={currentUser?.phone ?? ""}
+      />
     </Dialog>
   );
 }

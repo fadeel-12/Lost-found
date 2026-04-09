@@ -27,6 +27,12 @@ export async function GET() {
         type,
         imageUrl,
         user_id,
+        is_pet,
+        pet_name,
+        species,
+        breed,
+        pet_color,
+        microchip,
         category:categories ( name ),
         location:locations ( name ),
         user:users ( name, email, phone ),
@@ -52,7 +58,13 @@ export async function GET() {
       contactEmail: i.user?.email ?? '',
       contactPhone: i.user?.phone ?? '',
       user_id: i.user_id,
-      status: i.status
+      status: i.status,
+      is_pet: i.is_pet ?? false,
+      pet_name: i.pet_name ?? null,
+      species: i.species ?? null,
+      breed: i.breed ?? null,
+      pet_color: i.pet_color ?? null,
+      microchip: i.microchip ?? null,
     }));
 
     return NextResponse.json(items, { status: 200 });
@@ -79,10 +91,16 @@ export async function POST(req: NextRequest) {
     const name = formData.get("name") as string | null;
     const email = formData.get("email") as string | null;
     const phone = formData.get("phone") as string | null;
+    const is_pet = formData.get("is_pet") === "true";
+    const pet_name = formData.get("pet_name") as string | null;
+    const species = formData.get("species") as string | null;
+    const breed = formData.get("breed") as string | null;
+    const pet_color = formData.get("pet_color") as string | null;
+    const microchip = formData.get("microchip") as string | null;
 
     if (
       !user_id ||
-      !category_id ||
+      (!is_pet && !category_id) ||
       !location_id ||
       !title ||
       !description ||
@@ -157,6 +175,12 @@ export async function POST(req: NextRequest) {
           type,
           status,
           imageUrl,
+          is_pet,
+          pet_name: pet_name || null,
+          species: species || null,
+          breed: breed || null,
+          pet_color: pet_color || null,
+          microchip: microchip || null,
         },
       ])
       .select()
@@ -171,13 +195,127 @@ export async function POST(req: NextRequest) {
 
     const oppositeType = newItem.type === "lost" ? "found" : "lost";
 
+    // Track items already matched by microchip so fuzzy matching skips them
+    const microchipMatchedIds = new Set<string>();
+
+    // ── 1. Microchip exact match (pets only) ─────────────────────────────────
+    if (newItem.is_pet && newItem.microchip?.trim()) {
+      const normalizedChip = newItem.microchip.trim().toLowerCase();
+
+      const { data: chipMatches } = await supabase
+        .from("items")
+        .select("*")
+        .eq("type", oppositeType)
+        .eq("is_pet", true)
+        .eq("status", "open")
+        .ilike("microchip", normalizedChip);
+
+      if (chipMatches && chipMatches.length > 0) {
+        for (const candidate of chipMatches) {
+          const lostItemId  = newItem.type === "lost"  ? newItem.id   : candidate.id;
+          const foundItemId = newItem.type === "found" ? newItem.id   : candidate.id;
+          const lostUserId  = newItem.type === "lost"  ? newItem.user_id  : candidate.user_id;
+          const foundUserId = newItem.type === "found" ? newItem.user_id  : candidate.user_id;
+
+          await supabase.from("matches").insert([{
+            lost_item_id: lostItemId,
+            found_item_id: foundItemId,
+            match_score: 1.0,
+            location_match_score: 0,
+            match_type: "microchip",
+          }]);
+
+          microchipMatchedIds.add(candidate.id);
+
+          const [{ data: lostUser }, { data: foundUser }] = await Promise.all([
+            supabase.from("users").select("email, name").eq("id", lostUserId).maybeSingle(),
+            supabase.from("users").select("email, name").eq("id", foundUserId).maybeSingle(),
+          ]);
+
+          const petLabel = newItem.pet_name ?? newItem.title;
+          const candidatePetLabel = candidate.pet_name ?? candidate.title;
+
+          if (lostUser?.email) {
+            await sendMail(
+              lostUser.email,
+              "🐾 Definitive match found via microchip for your lost pet!",
+              `
+              <h2>🔬 Microchip Match Confirmed</h2>
+              <p>Hello ${lostUser.name},</p>
+              <p>We found a <strong>definitive match</strong> for your lost pet
+              <strong>${petLabel}</strong> based on the microchip number
+              <code>${newItem.microchip}</code>.</p>
+              <p>Someone has reported finding a pet with the same microchip ID.
+              Please log in to the Lost &amp; Found portal to contact them immediately.</p>
+              `
+            ).catch(console.error);
+          }
+
+          if (foundUser?.email) {
+            await sendMail(
+              foundUser.email,
+              "🐾 Definitive match found via microchip for the pet you found!",
+              `
+              <h2>🔬 Microchip Match Confirmed</h2>
+              <p>Hello ${foundUser.name},</p>
+              <p>The pet <strong>${candidatePetLabel}</strong> you found matches a lost pet report
+              by the registered microchip number <code>${newItem.microchip}</code>.</p>
+              <p>Please log in to the Lost &amp; Found portal to contact the owner.</p>
+              `
+            ).catch(console.error);
+          }
+
+          if (lostUserId && lostUser?.email) {
+            await supabase.from("notifications").insert([{
+              recipient_user_id: lostUserId,
+              recipient_email: lostUser.email,
+              notification_type: "item_match",
+              message: JSON.stringify({
+                title: "🔬 Microchip match confirmed!",
+                text: `Your lost pet "${petLabel}" was matched via microchip ID. Contact the finder now.`,
+                itemId: lostItemId,
+                matchItemId: foundItemId,
+                isMicrochipMatch: true,
+                createdAt: new Date().toISOString(),
+              }),
+              is_sent: true,
+              is_read: false,
+            }]);
+          }
+
+          if (foundUserId && foundUser?.email) {
+            await supabase.from("notifications").insert([{
+              recipient_user_id: foundUserId,
+              recipient_email: foundUser.email,
+              notification_type: "item_match",
+              message: JSON.stringify({
+                title: "🔬 Microchip match confirmed!",
+                text: `The pet you found ("${candidatePetLabel}") was matched via microchip ID. Contact the owner now.`,
+                itemId: foundItemId,
+                matchItemId: lostItemId,
+                isMicrochipMatch: true,
+                createdAt: new Date().toISOString(),
+              }),
+              is_sent: true,
+              is_read: false,
+            }]);
+          }
+        }
+      }
+    }
+
+    // ── 2. Fuzzy matching (skip items already matched by microchip) ───────────
     const { data: potentialMatches, error: fetchError } = await supabase
       .from("items")
       .select("*")
-      .eq("type", oppositeType);
+      .eq("type", oppositeType)
+      .eq("status", "open");
 
     if (!fetchError && potentialMatches && potentialMatches.length > 0) {
       for (const candidate of potentialMatches) {
+        // Skip if already captured by microchip match
+        if (microchipMatchedIds.has(candidate.id)) continue;
+
         let score = 0;
 
         if (candidate.category_id === newItem.category_id) {
@@ -204,38 +342,23 @@ export async function POST(req: NextRequest) {
         score += dateScore;
 
         if (score >= 0.5) {
+          const lostItemId  = newItem.type === "lost"  ? newItem.id   : candidate.id;
+          const foundItemId = newItem.type === "found" ? newItem.id   : candidate.id;
+          const lostUserId  = newItem.type === "lost"  ? newItem.user_id  : candidate.user_id;
+          const foundUserId = newItem.type === "found" ? newItem.user_id  : candidate.user_id;
 
-          const lostItemId =
-            newItem.type === "lost" ? newItem.id : candidate.id;
-          const foundItemId =
-            newItem.type === "found" ? newItem.id : candidate.id;
+          await supabase.from("matches").insert([{
+            lost_item_id: lostItemId,
+            found_item_id: foundItemId,
+            match_score: score,
+            location_match_score: locationScore,
+            match_type: "fuzzy",
+          }]);
 
-          await supabase.from("matches").insert([
-            {
-              lost_item_id: lostItemId,
-              found_item_id: foundItemId,
-              match_score: score,
-              location_match_score: locationScore,
-            },
+          const [{ data: lostUser }, { data: foundUser }] = await Promise.all([
+            supabase.from("users").select("email, name").eq("id", lostUserId).maybeSingle(),
+            supabase.from("users").select("email, name").eq("id", foundUserId).maybeSingle(),
           ]);
-
-
-          const lostUserId =
-            newItem.type === "lost" ? newItem.user_id : candidate.user_id;
-          const foundUserId =
-            newItem.type === "found" ? newItem.user_id : candidate.user_id;
-
-          const { data: lostUser } = await supabase
-            .from("users")
-            .select("email, name")
-            .eq("id", lostUserId)
-            .maybeSingle();
-
-          const { data: foundUser } = await supabase
-            .from("users")
-            .select("email, name")
-            .eq("id", foundUserId)
-            .maybeSingle();
 
           if (lostUser?.email) {
             await sendMail(
@@ -245,9 +368,9 @@ export async function POST(req: NextRequest) {
               <h2>Potential Match Found</h2>
               <p>Hello ${lostUser.name},</p>
               <p>We detected a possible match for your lost item: <strong>${newItem.title}</strong>.</p>
-              <p>Please check the Lost & Found portal to verify.</p>
+              <p>Please check the Lost &amp; Found portal to verify.</p>
               `
-            );
+            ).catch(console.error);
           }
 
           if (foundUser?.email) {
@@ -258,47 +381,43 @@ export async function POST(req: NextRequest) {
               <h2>Potential Match Found</h2>
               <p>Hello ${foundUser.name},</p>
               <p>Your found item <strong>${candidate.title}</strong> appears to match a lost item reported by another user.</p>
-              <p>Please check the Lost & Found portal to verify.</p>
+              <p>Please check the Lost &amp; Found portal to verify.</p>
               `
-            );
+            ).catch(console.error);
           }
 
           if (lostUserId && lostUser?.email) {
-            await supabase.from("notifications").insert([
-              {
-                recipient_user_id: lostUserId,
-                recipient_email: lostUser.email,
-                notification_type: "item_match",
-                message: JSON.stringify({
-                  title: "Potential match found",
-                  text: `We found a possible match for your item: ${newItem.title}`,
-                  itemId: lostItemId,
-                  matchItemId: foundItemId,
-                  createdAt: new Date().toISOString(),
-                }),
-                is_sent: true,
-                is_read: false,
-              },
-            ]);
+            await supabase.from("notifications").insert([{
+              recipient_user_id: lostUserId,
+              recipient_email: lostUser.email,
+              notification_type: "item_match",
+              message: JSON.stringify({
+                title: "Potential match found",
+                text: `We found a possible match for your item: ${newItem.title}`,
+                itemId: lostItemId,
+                matchItemId: foundItemId,
+                createdAt: new Date().toISOString(),
+              }),
+              is_sent: true,
+              is_read: false,
+            }]);
           }
 
           if (foundUserId && foundUser?.email) {
-            await supabase.from("notifications").insert([
-              {
-                recipient_user_id: foundUserId,
-                recipient_email: foundUser.email,
-                notification_type: "item_match",
-                message: JSON.stringify({
-                  title: "Potential match found",
-                  text: `Your found item may match a lost report: ${candidate.title}`,
-                  itemId: foundItemId,
-                  matchItemId: lostItemId,
-                  createdAt: new Date().toISOString(),
-                }),
-                is_sent: true,
-                is_read: false,
-              },
-            ]);
+            await supabase.from("notifications").insert([{
+              recipient_user_id: foundUserId,
+              recipient_email: foundUser.email,
+              notification_type: "item_match",
+              message: JSON.stringify({
+                title: "Potential match found",
+                text: `Your found item may match a lost report: ${candidate.title}`,
+                itemId: foundItemId,
+                matchItemId: lostItemId,
+                createdAt: new Date().toISOString(),
+              }),
+              is_sent: true,
+              is_read: false,
+            }]);
           }
         }
       }

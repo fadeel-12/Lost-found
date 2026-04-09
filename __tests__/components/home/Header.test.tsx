@@ -25,6 +25,7 @@ describe("<Header />", () => {
     onDeleteNotif: jest.fn(),
     onEditProfile: jest.fn(),
     onMyItems: jest.fn(),
+    onMyQRTags: jest.fn(),
   };
 
   it("renders app title and Report Item button", () => {

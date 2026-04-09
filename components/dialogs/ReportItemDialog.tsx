@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { Switch } from "@/components/ui/switch";
 
 interface ReportItemDialogProps {
   open: boolean;
@@ -50,7 +52,7 @@ type Location = {
 };
 
 export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: ReportItemDialogProps) {
-
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     type: "lost",
     name: "",
@@ -62,6 +64,12 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
     location: "",
     date: "",
     image: null as File | null,
+    isPet: false,
+    petName: "",
+    species: "",
+    breed: "",
+    petColor: "",
+    microchip: "",
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -91,7 +99,7 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
         setLocations(locJson.locations ?? []);
       } catch (error) {
         console.error(error);
-        toast.error('Failed to load categories/locations. Please try again.');
+        toast.error(t.report.loadFailed);
       } finally {
         setLoadingOptions(false);
       }
@@ -115,12 +123,7 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
     e.preventDefault();
 
     if (!user) {
-      toast.error("You must be signed in to report an item.");
-      return;
-    }
-
-    if (!formData.category || !formData.location) {
-      toast.error("Please select both category and location.");
+      toast.error(t.report.signInRequired);
       return;
     }
 
@@ -128,9 +131,9 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
 
     const payload = new FormData();
     payload.append("user_id", user.id);
-    payload.append("category_id", formData.category);
+    if (!formData.isPet) payload.append("category_id", formData.category);
     payload.append("location_id", formData.location);
-    payload.append("title", formData.itemName);
+    payload.append("title", formData.isPet ? (formData.petName || formData.species || "Pet") : formData.itemName);
     payload.append("description", formData.description);
     payload.append("date", formData.date);
     payload.append("type", formData.type);
@@ -139,8 +142,14 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
     if (formData.name) payload.append("name", formData.name);
     if (formData.email) payload.append("email", formData.email);
     if (formData.phone) payload.append("phone", formData.phone);
-    if (formData.image) {
-      payload.append("image", formData.image);
+    if (formData.image) payload.append("image", formData.image);
+    payload.append("is_pet", String(formData.isPet));
+    if (formData.isPet) {
+      if (formData.petName) payload.append("pet_name", formData.petName);
+      if (formData.species) payload.append("species", formData.species);
+      if (formData.breed) payload.append("breed", formData.breed);
+      if (formData.petColor) payload.append("pet_color", formData.petColor);
+      if (formData.microchip) payload.append("microchip", formData.microchip);
     }
 
     try {
@@ -167,6 +176,12 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
         location: "",
         date: "",
         image: null,
+        isPet: false,
+        petName: "",
+        species: "",
+        breed: "",
+        petColor: "",
+        microchip: "",
       });
 
       if (onSuccess) {
@@ -193,15 +208,13 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Report Item</DialogTitle>
-          <DialogDescription>
-            Fill in the details to report a lost or found item
-          </DialogDescription>
+          <DialogTitle>{t.report.title}</DialogTitle>
+          <DialogDescription>{t.report.description}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label>Item Type</Label>
+            <Label>{t.report.itemType}</Label>
             <RadioGroup
               value={formData.type}
               onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -209,32 +222,105 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="lost" id="lost" />
-                <Label htmlFor="lost" className="cursor-pointer">Lost Item</Label>
+                <Label htmlFor="lost" className="cursor-pointer">{t.report.lostItem}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="found" id="found" />
-                <Label htmlFor="found" className="cursor-pointer">Found Item</Label>
+                <Label htmlFor="found" className="cursor-pointer">{t.report.foundItem}</Label>
               </div>
             </RadioGroup>
           </div>
 
+          {/* Pet toggle */}
+          <div className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <span className="text-xl">🐾</span>
+            <Label htmlFor="isPet" className="flex-1 cursor-pointer">{t.pet.isPet}</Label>
+            <Switch
+              id="isPet"
+              checked={formData.isPet}
+              onCheckedChange={(checked) => setFormData({ ...formData, isPet: checked })}
+            />
+          </div>
+
+          {/* Pet fields */}
+          {formData.isPet && (
+            <div className="space-y-4 border border-orange-200 rounded-lg p-4 bg-orange-50/50">
+              <h3 className="font-medium text-orange-700">{t.pet.petSection}</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="petName">{t.pet.petName}</Label>
+                <Input
+                  id="petName"
+                  value={formData.petName}
+                  onChange={(e) => setFormData({ ...formData, petName: e.target.value })}
+                  placeholder={t.pet.petNamePlaceholder}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="species">{t.pet.species}</Label>
+                <Select
+                  value={formData.species}
+                  onValueChange={(v) => setFormData({ ...formData, species: v })}
+                >
+                  <SelectTrigger><SelectValue placeholder={t.pet.selectSpecies} /></SelectTrigger>
+                  <SelectContent>
+                    {["Dog","Cat","Bird","Rabbit","Hamster","Reptile","Other"].map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="breed">{t.pet.breed}</Label>
+                <Input
+                  id="breed"
+                  value={formData.breed}
+                  onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                  placeholder={t.pet.breedPlaceholder}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="petColor">{t.pet.color}</Label>
+                <Input
+                  id="petColor"
+                  value={formData.petColor}
+                  onChange={(e) => setFormData({ ...formData, petColor: e.target.value })}
+                  placeholder={t.pet.colorPlaceholder}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="microchip">{t.pet.microchip}</Label>
+                <Input
+                  id="microchip"
+                  value={formData.microchip}
+                  onChange={(e) => setFormData({ ...formData, microchip: e.target.value })}
+                  placeholder={t.pet.microchipPlaceholder}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            <h3 className="border-b pb-2">Your Information</h3>
+            <h3 className="border-b pb-2">{t.report.yourInfo}</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="name">{t.report.fullName} *</Label>
               <Input
                 id="name"
                 required
                 disabled={!!user?.name}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter your full name"
+                placeholder={t.report.fullNamePlaceholder}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="email">{t.report.emailAddress} *</Label>
               <Input
                 id="email"
                 type="email"
@@ -242,12 +328,12 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
                 disabled={!!user?.email}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="your.email@example.com"
+                placeholder={t.report.emailPlaceholder}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number *</Label>
+              <Label htmlFor="phone">{t.report.phoneNumber} *</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -255,69 +341,71 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
                 disabled={!!user?.phone}
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="Enter your phone number"
+                placeholder={t.report.phonePlaceholder}
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="border-b pb-2">Item Details</h3>
+            <h3 className="border-b pb-2">{t.report.itemDetails}</h3>
 
-            <div className="space-y-2">
-              <Label htmlFor="itemName">Item Name *</Label>
-              <Input
-                id="itemName"
-                required
-                value={formData.itemName}
-                onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
-                placeholder="e.g. Black Backpack, iPhone 14, etc."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={loadingOptions ? 'Loading categories...' : 'Select a category'}
+            {!formData.isPet && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="itemName">{t.report.itemName} *</Label>
+                  <Input
+                    id="itemName"
+                    required={!formData.isPet}
+                    value={formData.itemName}
+                    onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
+                    placeholder={t.report.itemNamePlaceholder}
                   />
-                </SelectTrigger>
-                <SelectContent className="max-h-56">
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">{t.report.category}</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={loadingOptions ? t.report.loadingCategories : t.report.selectCategory}
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">{t.report.descriptionLabel} *</Label>
               <Textarea
                 id="description"
                 required
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Provide detailed description including color, brand, distinctive features..."
+                placeholder={t.report.descriptionPlaceholder}
                 rows={4}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location *</Label>
+              <Label htmlFor="location">{t.report.locationLabel}</Label>
               <Select
                 value={formData.location}
                 onValueChange={(value) => setFormData({ ...formData, location: value })}
-                required
               >
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={loadingOptions ? 'Loading locations...' : 'Select a location'}
+                    placeholder={loadingOptions ? t.report.loadingLocations : t.report.selectLocation}
                   />
                 </SelectTrigger>
 
@@ -332,7 +420,7 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">{t.report.date} *</Label>
               <Input
                 id="date"
                 type="date"
@@ -344,7 +432,7 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image">Upload Image</Label>
+              <Label htmlFor="image">{t.report.uploadImage}</Label>
               <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                 <input
                   id="image"
@@ -356,9 +444,9 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
                 <label htmlFor="image" className="cursor-pointer">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-600">
-                    {formData.image ? formData.image.name : 'Click to upload an image'}
+                    {formData.image ? formData.image.name : t.report.clickToUpload}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">PNG, JPG</p>
+                  <p className="text-xs text-gray-400 mt-1">{t.report.imageFormats}</p>
                 </label>
               </div>
             </div>
@@ -371,10 +459,10 @@ export function ReportItemDialog({ open, onOpenChange, onSuccess, user }: Report
               onClick={() => onOpenChange(false)}
               className="flex-1"
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="submit" className="flex-1" disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit Report'}
+              {submitting ? t.report.submitting : t.report.submitReport}
             </Button>
           </div>
         </form>

@@ -1,6 +1,17 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ItemDetailsDialog } from "@/components/dialogs/ItemDetailsDialog";
 
+beforeEach(() => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => [],
+  });
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 describe("<ItemDetailsDialog />", () => {
   const baseItem = {
     id: "i1",
@@ -28,6 +39,7 @@ describe("<ItemDetailsDialog />", () => {
         onMarkRecovered={jest.fn()}
         onDeleteItem={jest.fn()}
         onOpenItemMessages={jest.fn()}
+        onItemClick={jest.fn()}
       />
     );
 
@@ -47,6 +59,7 @@ describe("<ItemDetailsDialog />", () => {
         onMarkRecovered={jest.fn()}
         onDeleteItem={jest.fn()}
         onOpenItemMessages={onOpenItemMessages}
+        onItemClick={jest.fn()}
       />
     );
 

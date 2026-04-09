@@ -1,6 +1,7 @@
 "use client";
 
-import { User } from "lucide-react";
+import { User, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 interface ProfileDropdownProps {
   onEditProfile: () => void;
   onMyItems: () => void;
+  onMyQRTags: () => void;
   userName?: string;
   userEmail?: string;
 }
@@ -21,6 +23,7 @@ interface ProfileDropdownProps {
 export function ProfileDropdown({
   onEditProfile,
   onMyItems,
+  onMyQRTags,
   userName,
   userEmail,
 }: ProfileDropdownProps) {
@@ -44,12 +47,25 @@ export function ProfileDropdown({
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer w-full">
+            <LayoutDashboard className="h-4 w-4 text-blue-500" />
+            <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         <DropdownMenuItem onClick={onEditProfile} className="cursor-pointer">
           <span>Edit Profile</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={onMyItems} className="cursor-pointer">
           <span>My Items</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={onMyQRTags} className="cursor-pointer">
+          <span>My QR Tags</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

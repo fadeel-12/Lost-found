@@ -10,6 +10,7 @@ describe("<ProfileDropdown />", () => {
     render(<ProfileDropdown
       onEditProfile={onEditProfile}
       onMyItems={onMyItems}
+      onMyQRTags={jest.fn()}
       userName="User"
       userEmail="user@example.com"
     />);

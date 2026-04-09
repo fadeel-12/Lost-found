@@ -6,6 +6,11 @@ import type { AppNotification } from "@/components/home/NotificationsPanel";
 import { Header } from "@/components/home/Header";
 import { ItemsSection } from "@/components/home/ItemsSection";
 import { Dialogs } from "@/components/home/Dialogs";
+import { Footer } from "@/components/home/Footer";
+import { ClientSatisfactionSection } from "@/components/home/ClientSatisfactionSection";
+import { ReviewDialog } from "@/components/dialogs/ReviewDialog";
+import { NotificationDetailDialog } from "@/components/dialogs/NotificationDetailDialog";
+import { QRTagsDialog } from "@/components/dialogs/QRTagsDialog";
 import { useHomeController } from "@/hooks/useHomeController";
 
 export default function Home() {
@@ -28,6 +33,8 @@ function HomeContent() {
   const router = useRouter();
 
   const [initialChatId, setInitialChatId] = useState<string | null>(null);
+  const [notifDetailOpen, setNotifDetailOpen] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
 
   useEffect(() => {
     const signIn = searchParams.get("showSignIn");
@@ -45,25 +52,21 @@ function HomeContent() {
     router.replace("/", { scroll: false });
   }, [searchParams, router, c.auth.loading, c.auth.user]);
 
-  const handleNotificationClick = (n: AppNotification) => {
-    if (n.type === "message" && n.conversationId) {
-      setInitialChatId(n.conversationId);
-      c.dialogs.setItemMessagesItemId(null);
-      c.dialogs.setItemMessagesDialogOpen(true);
-      return;
+  // Auto-open QR tags dialog when returning from Stripe payment success
+  useEffect(() => {
+    if (searchParams.get("qr_tags") === "open") {
+      c.profile.setQrTagsOpen(true);
+      router.replace("/", { scroll: false });
     }
+  }, [searchParams]);
 
-    const targetItemId =
-      n.type === "item_match" ? (n.matchItemId ?? null) : (n.itemId ?? null);
-    if (!targetItemId) return;
-    const item = c.data.filteredItems.find((x: any) => x.id === targetItemId);
-    if (item) {
-      c.actions.openDetails(item);
-    }
+  const handleNotificationClick = (n: AppNotification) => {
+    setSelectedNotif(n);
+    setNotifDetailOpen(true);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header
         loading={c.auth.loading}
         user={c.auth.user}
@@ -93,6 +96,7 @@ function HomeContent() {
           await c.profile.fetchMyItems();
           c.profile.setMyItemsDialogOpen(true);
         }}
+        onMyQRTags={() => c.profile.setQrTagsOpen(true)}
       />
 
       <ItemsSection
@@ -102,12 +106,44 @@ function HomeContent() {
         filteredCount={c.data.filteredItems.length}
         items={c.data.currentItems}
         onItemClick={c.actions.openDetails}
+        onRemoveItem={c.data.removeItem}
         pagination={{
           page: c.pagination.currentPage,
           totalPages: c.pagination.totalPages,
           onPrev: () => c.pagination.setCurrentPage((p) => p - 1),
           onNext: () => c.pagination.setCurrentPage((p) => p + 1),
         }}
+      />
+
+      <ClientSatisfactionSection />
+
+      <Footer />
+
+      <NotificationDetailDialog
+        open={notifDetailOpen}
+        onOpenChange={setNotifDetailOpen}
+        notification={selectedNotif}
+        onViewItem={(item) => {
+          setNotifDetailOpen(false);
+          c.actions.openDetails(item);
+        }}
+        onOpenChat={(conversationId) => {
+          setInitialChatId(conversationId);
+          c.dialogs.setItemMessagesItemId(null);
+          c.dialogs.setItemMessagesDialogOpen(true);
+        }}
+      />
+
+      <ReviewDialog
+        open={c.review.reviewOpen}
+        onOpenChange={c.review.setReviewOpen}
+        userId={c.auth.user?.id ?? ""}
+        itemId={c.review.reviewItemId ?? ""}
+      />
+
+      <QRTagsDialog
+        open={c.profile.qrTagsOpen}
+        onOpenChange={c.profile.setQrTagsOpen}
       />
 
       <Dialogs
@@ -133,7 +169,6 @@ function HomeContent() {
         setItemMessagesDialogOpen={c.dialogs.setItemMessagesDialogOpen}
         itemMessagesItemId={c.dialogs.itemMessagesItemId}
         setItemMessagesItemId={c.dialogs.setItemMessagesItemId}
-        requestOpenMessagesForItem={c.dialogs.requestOpenMessagesForItem}
         consumePendingMessagesIntent={c.dialogs.consumePendingMessagesIntent}
         consumePendingReportIntent={c.dialogs.consumePendingReportIntent}
         editProfileOpen={c.profile.editProfileDialogOpen}

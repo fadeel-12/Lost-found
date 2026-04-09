@@ -72,11 +72,13 @@ export async function GET() {
             };
         }
 
+        const rawMsg = typeof row.message === "string" ? row.message : "";
+        const isQRTag = rawMsg.includes("QR-tagged item");
         return {
             id: row.id,
             type: (row.notification_type ?? "system"),
-            title: "Notification",
-            message: typeof row.message === "string" ? row.message : "",
+            title: isQRTag ? "Item Found via QR Tag" : "Notification",
+            message: rawMsg,
             timestamp: row.created_at,
             read: !!row.is_read,
         };
