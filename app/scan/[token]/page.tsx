@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { MapPin, MessageSquare, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { MapPin, MessageSquare, CheckCircle, AlertCircle, Loader2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ type TagInfo = {
 };
 
 type Step = "loading" | "found_form" | "submitting" | "success" | "error";
+type GeoStatus = "idle" | "requesting" | "granted" | "denied" | "unavailable";
 
 export default function ScanPage() {
   const { token } = useParams<{ token: string }>();
@@ -28,6 +29,12 @@ export default function ScanPage() {
   const [location, setLocation] = useState("");
   const [contactInfo, setContactInfo] = useState("");
 
+  // GPS state
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const geoAttempted = useRef(false);
+
+  // Load tag info
   useEffect(() => {
     if (!token) return;
     fetch(`/api/qr-tags/scan/${token}`)
@@ -45,6 +52,54 @@ export default function ScanPage() {
       });
   }, [token]);
 
+  // Auto-request location once the form is shown
+  useEffect(() => {
+    if (step !== "found_form" || geoAttempted.current) return;
+    geoAttempted.current = true;
+
+    if (!("geolocation" in navigator)) {
+      setGeoStatus("unavailable");
+      return;
+    }
+
+    setGeoStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setCoords({ lat, lng });
+        setGeoStatus("granted");
+
+        // Reverse-geocode with Nominatim (free, no API key needed)
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const geo = await res.json();
+          if (geo?.display_name) {
+            const a = geo.address ?? {};
+            const parts = [
+              a.road ?? a.pedestrian ?? a.footway,
+              a.house_number,
+              a.suburb ?? a.neighbourhood ?? a.quarter,
+              a.city ?? a.town ?? a.village ?? a.municipality,
+              a.country,
+            ].filter(Boolean);
+            setLocation(parts.join(", "));
+          }
+        } catch {
+          // Fallback: just show coordinates
+          setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+      },
+      (err) => {
+        console.warn("[geo] denied:", err.message);
+        setGeoStatus(err.code === 1 ? "denied" : "unavailable");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [step]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -54,7 +109,13 @@ export default function ScanPage() {
       const res = await fetch(`/api/qr-tags/scan/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, location, contactInfo }),
+        body: JSON.stringify({
+          message,
+          location,
+          contactInfo,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
@@ -135,10 +196,28 @@ export default function ScanPage() {
                 />
               </div>
 
+              {/* Location field with GPS status */}
               <div className="space-y-2">
                 <Label htmlFor="location" className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-blue-500" />
-                  Where did you find it? (optional)
+                  Scan location
+                  {geoStatus === "requesting" && (
+                    <span className="ml-auto text-xs text-blue-500 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Getting location…
+                    </span>
+                  )}
+                  {geoStatus === "granted" && coords && (
+                    <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
+                      <Navigation className="h-3 w-3" />
+                      GPS detected
+                    </span>
+                  )}
+                  {geoStatus === "denied" && (
+                    <span className="ml-auto text-xs text-amber-500">
+                      Location access denied
+                    </span>
+                  )}
                 </Label>
                 <Input
                   id="location"
@@ -146,6 +225,17 @@ export default function ScanPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
+                {geoStatus === "granted" && coords && (
+                  <p className="text-xs text-gray-400">
+                    GPS coordinates captured and will be shared with the owner.
+                    You can edit the address above.
+                  </p>
+                )}
+                {geoStatus === "denied" && (
+                  <p className="text-xs text-amber-500">
+                    Location permission was denied. You can still type your location manually.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -171,7 +261,7 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* Success */}
+        {/* Submitting */}
         {step === "submitting" && (
           <div className="bg-white rounded-xl shadow p-8 text-center">
             <Loader2 className="h-10 w-10 text-blue-500 mx-auto animate-spin mb-3" />
@@ -179,12 +269,13 @@ export default function ScanPage() {
           </div>
         )}
 
+        {/* Success */}
         {step === "success" && (
           <div className="bg-white rounded-xl shadow p-8 text-center">
             <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Message Sent!</h2>
             <p className="text-gray-500 text-sm mb-6">
-              The owner has been notified. Thank you for helping return this item!
+              The owner has been notified with your location. Thank you for helping return this item!
             </p>
             <Link href="/">
               <Button variant="outline" className="w-full">Back to Lostify</Button>

@@ -106,16 +106,25 @@ export async function POST(
   const message = String(body?.message ?? "").trim();
   const contactInfo = String(body?.contactInfo ?? "").trim();
   const location = String(body?.location ?? "").trim();
+  const latitude = typeof body?.latitude === "number" ? body.latitude : null;
+  const longitude = typeof body?.longitude === "number" ? body.longitude : null;
 
   if (!message) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
+
+  // Build Google Maps link if GPS coords were provided
+  const mapsLink =
+    latitude !== null && longitude !== null
+      ? `https://www.google.com/maps?q=${latitude},${longitude}`
+      : null;
 
   // Compose notification message for the owner
   const notifBody = [
     `📦 Someone found your QR-tagged item: "${tag.label}"`,
     `Message: "${message}"`,
     location ? `📍 Location: ${location}` : null,
+    mapsLink ? `🗺️ GPS Map: ${mapsLink}` : null,
     contactInfo ? `📞 Contact: ${contactInfo}` : null,
   ]
     .filter(Boolean)
