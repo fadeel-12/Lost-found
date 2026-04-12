@@ -1,6 +1,6 @@
 "use client";
 
-import { User, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ interface ProfileDropdownProps {
   onMyQRTags: () => void;
   userName?: string;
   userEmail?: string;
+  userAvatar?: string;
 }
 
 export function ProfileDropdown({
@@ -26,12 +27,23 @@ export function ProfileDropdown({
   onMyQRTags,
   userName,
   userEmail,
+  userAvatar,
 }: ProfileDropdownProps) {
+  const initials = userName
+    ? userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
-          <User className="h-5 w-5" />
+        <Button variant="outline" size="icon" className="relative overflow-hidden rounded-full p-0 h-9 w-9 border-2">
+          {userAvatar ? (
+            <img src={userAvatar} alt={userName ?? "Profile"} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-semibold text-blue-600 bg-blue-50 w-full h-full flex items-center justify-center">
+              {initials}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
 

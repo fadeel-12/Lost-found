@@ -45,6 +45,7 @@ type Props = {
   onEditProfile: () => void;
   onMyItems: () => void;
   onMyQRTags: () => void;
+  userAvatar?: string;
 };
 
 export function Header({
@@ -61,6 +62,7 @@ export function Header({
   onEditProfile,
   onMyItems,
   onMyQRTags,
+  userAvatar,
 }: Props) {
   const { t, locale, setLocale } = useTranslation();
   const currentLocaleLabel = LOCALES.find((l) => l.value === locale)?.label ?? "EN";
@@ -109,6 +111,7 @@ export function Header({
                   <ProfileDropdown
                     userName={user?.name}
                     userEmail={user?.email}
+                    userAvatar={userAvatar}
                     onEditProfile={onEditProfile}
                     onMyItems={onMyItems}
                     onMyQRTags={onMyQRTags}

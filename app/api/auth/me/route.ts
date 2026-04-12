@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, name, email, phone, email_verified, verified_at, created_at, student_id")
+      .select("id, name, email, phone, email_verified, verified_at, created_at, student_id, avatar_url")
       .eq("id", session.user_id)
       .maybeSingle();
 
@@ -63,12 +63,15 @@ export async function PATCH(req: Request) {
   if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
   if (!phone) return NextResponse.json({ error: "Phone is required" }, { status: 400 });
 
+  const avatarUrl = body?.avatarUrl !== undefined ? (String(body.avatarUrl).trim() || null) : undefined;
+
   const { error } = await supabase
     .from("users")
     .update({
       name,
       phone,
       student_id: studentId || null,
+      ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
     })
     .eq("id", user.id);
 

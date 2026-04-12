@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { User, Camera } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -19,6 +19,7 @@ export type UserProfile = {
   email: string;
   phone: string;
   studentId: string;
+  avatarUrl?: string;
 };
 
 type Props = {
@@ -36,9 +37,16 @@ export function EditProfileDialog({
 }: Props) {
   const [edited, setEdited] = useState<UserProfile>(userProfile);
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) setEdited(userProfile);
+    if (open) {
+      setEdited(userProfile);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    }
   }, [open, userProfile]);
 
   const handleInput = (field: keyof UserProfile, value: string) => {
@@ -51,12 +59,23 @@ export function EditProfileDialog({
 
     try {
       setSaving(true);
-      await onUpdateProfile(edited);
+
+      // Upload new avatar if one was selected
+      let newAvatarUrl = edited.avatarUrl;
+      if (avatarFile) {
+        const fd = new FormData();
+        fd.append("avatar", avatarFile);
+        const res = await fetch("/api/auth/upload-avatar", { method: "POST", body: fd });
+        if (res.ok) {
+          const json = await res.json();
+          newAvatarUrl = json.avatarUrl;
+        }
+      }
+
+      await onUpdateProfile({ ...edited, avatarUrl: newAvatarUrl });
       toast.success("Profile updated successfully!");
       onOpenChange(false);
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      setTimeout(() => window.location.reload(), 500);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to update profile");
     } finally {
@@ -74,12 +93,39 @@ export function EditProfileDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <User className="h-6 w-6 text-blue-600" />
-            </div>
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="relative h-14 w-14 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center shrink-0 group border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors"
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+              ) : edited.avatarUrl ? (
+                <img src={edited.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="h-6 w-6 text-blue-600" />
+              )}
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="h-4 w-4 text-white" />
+              </div>
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setAvatarFile(file);
+                setAvatarPreview(URL.createObjectURL(file));
+              }}
+            />
             <div>
               <DialogTitle>Edit Profile</DialogTitle>
-              <DialogDescription>Update your personal information</DialogDescription>
+              <DialogDescription>
+                {avatarPreview ? "New photo selected — click Save to apply" : "Click photo to change it"}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>

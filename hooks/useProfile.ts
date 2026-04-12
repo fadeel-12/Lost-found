@@ -18,6 +18,7 @@ export function useProfile(userId: string | null) {
     email: "",
     phone: "",
     studentId: "",
+    avatarUrl: "",
   });
 
   const [lostItems, setLostItems] = useState<UserItem[]>([]);
@@ -39,6 +40,7 @@ export function useProfile(userId: string | null) {
         email: json.user?.email ?? "",
         phone: json.user?.phone ?? "",
         studentId: json.user?.student_id ?? "",
+        avatarUrl: json.user?.avatar_url ?? "",
       });
     }
   }, [userId]);
@@ -53,6 +55,7 @@ export function useProfile(userId: string | null) {
         name: next.name,
         phone: next.phone,
         studentId: next.studentId,
+        avatarUrl: next.avatarUrl ?? null,
       }),
     });
 

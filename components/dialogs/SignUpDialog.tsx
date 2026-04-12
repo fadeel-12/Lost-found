@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { UserPlus, Check, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { UserPlus, Check, X, Camera } from 'lucide-react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,9 @@ interface SignUpDialogProps {
 
 export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDialogProps) {
   const { t } = useTranslation();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -70,6 +73,17 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
 
       toast.success("Account created successfully! Check your email to verify your account.");
 
+      // Upload avatar if one was selected (best-effort, non-blocking)
+      if (avatarFile && data?.user?.id) {
+        try {
+          const fd = new FormData();
+          fd.append("avatar", avatarFile);
+          await fetch("/api/auth/upload-avatar", { method: "POST", body: fd });
+        } catch {
+          // Avatar upload failure is non-fatal
+        }
+      }
+
       setFormData({
         fullName: '',
         email: '',
@@ -78,6 +92,8 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
         password: '',
         confirmPassword: '',
       });
+      setAvatarFile(null);
+      setAvatarPreview(null);
 
       setErrors({
         password: '',
@@ -130,6 +146,40 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Profile picture */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="relative w-20 h-20 rounded-full overflow-hidden bg-blue-50 border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors flex items-center justify-center group"
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+              ) : (
+                <Camera className="h-7 w-7 text-blue-400 group-hover:text-blue-600 transition-colors" />
+              )}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="h-5 w-5 text-white" />
+              </div>
+            </button>
+            <p className="text-xs text-gray-400">
+              {avatarFile ? avatarFile.name : "Upload profile photo (optional)"}
+            </p>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setAvatarFile(file);
+                setAvatarPreview(URL.createObjectURL(file));
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="fullName">{t.auth.fullName} *</Label>
             <Input

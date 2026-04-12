@@ -97,6 +97,7 @@ function HomeContent() {
           c.profile.setMyItemsDialogOpen(true);
         }}
         onMyQRTags={() => c.profile.setQrTagsOpen(true)}
+        userAvatar={c.profile.profile.avatarUrl}
       />
 
       <ItemsSection
