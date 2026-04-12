@@ -92,21 +92,27 @@ export function EditProfileDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-3">
+          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>Update your personal information and profile photo</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 py-2">
+          {/* Avatar picker */}
+          <div className="flex flex-col items-center gap-2">
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
-              className="relative h-14 w-14 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center shrink-0 group border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors"
+              className="relative w-24 h-24 rounded-full overflow-hidden bg-blue-50 border-2 border-dashed border-blue-200 hover:border-blue-500 transition-colors flex items-center justify-center group"
             >
               {avatarPreview ? (
                 <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
               ) : edited.avatarUrl ? (
                 <img src={edited.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <User className="h-6 w-6 text-blue-600" />
+                <User className="h-10 w-10 text-blue-300" />
               )}
-              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="h-4 w-4 text-white" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="h-6 w-6 text-white" />
               </div>
             </button>
             <input
@@ -121,16 +127,15 @@ export function EditProfileDialog({
                 setAvatarPreview(URL.createObjectURL(file));
               }}
             />
-            <div>
-              <DialogTitle>Edit Profile</DialogTitle>
-              <DialogDescription>
-                {avatarPreview ? "New photo selected — click Save to apply" : "Click photo to change it"}
-              </DialogDescription>
-            </div>
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              {avatarPreview ? "Photo selected — click Save to apply" : (edited.avatarUrl ? "Change photo" : "Upload photo")}
+            </button>
           </div>
-        </DialogHeader>
 
-        <div className="space-y-6 py-4">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name *</Label>
